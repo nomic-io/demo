@@ -1,0 +1,72 @@
+@block-width: 120px;
+@block-height: 80px;
+@block-gap: 80px;
+@block-color: white;//rgb(0, 134, 249);
+@block-border-width: 3px;
+
+@link-color: rgb(148, 37, 249);//rgb(42, 89, 137);
+@link-height: 3px;
+@link-dot-size: 9px;
+
+body {
+  background: #eee;
+  padding-top: 80px;
+  font-family: 'Asap', sans-serif;
+}
+
+.chain {
+  width: 100%;
+  height: 300px;
+  position: relative;
+  z-index: -1;
+
+  .block {
+    display: inline-block;
+    background: @block-color;
+    border: @block-border-width solid black;
+    position: relative;
+
+    width: @block-width;
+    height: @block-height;
+
+    border-radius: 6px;
+
+    .content {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      text-align: center;
+      padding: 8px 4px;
+      color: #555;
+      font-size: 0.9em;
+    }
+  }
+
+  .link {
+    display: inline-block;
+    position: relative;
+    top: -(@block-height / 2) - (@link-height / 2);
+    height: @link-height;
+    width: @block-gap;
+    background: @link-color;
+  }
+
+  .link:after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: -(@link-dot-size / 2) + (@link-height / 2);
+    border-radius: 100px;
+    height: @link-dot-size;
+    width: @link-dot-size;
+    background: @link-color;
+    z-index: 10;
+    right: -(@link-dot-size / 2) - (@block-border-width / 2);
+  }
+
+  .link:before {
+
+  }
+}
