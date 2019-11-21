@@ -1,13 +1,14 @@
 @background: #eee;
 
-@block-width: 120px;
-@block-height: 80px;
+@block-width: 130px;
+@block-height: 86px;
 @block-gap: 64px;
 @block-color: white;//rgb(0, 134, 249);
 @block-border-width: 3px;
 
-@link-color-1: rgb(148, 37, 249);//rgb(42, 89, 137);
-@link-color-2: rgb(62, 107, 255);//rgb(42, 89, 137);
+@link-color-1: rgb(255, 133, 34);//rgb(42, 89, 137);
+@link-color-2: rgb(148, 37, 249);//rgb(42, 89, 137);
+@link-color-3: rgb(0, 162, 255);//rgb(42, 89, 137);
 @link-width: 3px;
 @link-dot-size: 9px;
 
@@ -45,7 +46,7 @@ section.chains {
     width: max-content;
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 80px;
+    line-height: 0;
 
     > label {
       display: block;
@@ -57,12 +58,13 @@ section.chains {
       width: 100%;
       text-align: center;
       font-size: 0.8em;
+      line-height: 1em;
       z-index: 1;
 
       span {
         display: inline-block;
         background: @background;
-        padding: 0 7px;
+        padding: 0 8px;
       }
     }
     > label:after {
@@ -71,7 +73,7 @@ section.chains {
       border-top: 1px solid #ddd;
       width: 100%;
       position: relative;
-      bottom: 0.7em;
+      bottom: 0.5em;
       z-index: -2;
     }
 
@@ -93,9 +95,29 @@ section.chains {
         bottom: 0;
         left: 0;
         text-align: center;
-        padding: 8px 4px;
-        color: #555;
+        padding: 9px 4px;
+        color: #777;
         font-size: 0.9em;
+        line-height: 1.15em;
+
+        label {
+          text-transform: uppercase;
+          font-size: 0.72em;
+          font-weight: bold;
+          color: #444;
+          margin-right: 4px;
+        }
+
+        .hash {
+          font-family: monospace;
+          color: #aaa;
+        }
+
+        .separator {
+          margin-left: 6px;
+          border-left: 1px solid #ddd;
+          margin-right: 6px;
+        }
       }
     }
 
@@ -120,17 +142,81 @@ section.chains {
       z-index: 10;
       right: -(@link-dot-size / 2) - (@block-border-width / 2);
     }
+
+    .fade {
+      display: inline-block;
+      position: relative;
+      height: 100%;
+      top: -@link-width;
+      
+      > .link {
+        position: absolute;
+        left: -@block-gap;
+        background: none;
+        background-image: linear-gradient(
+          to left,
+          rgba(@link-color-1, 0.5) -30%,
+          rgba(0,0,0,0) 70%
+        );
+      }
+    }
   }
   .chain:last-child {
-    margin-bottom: 0;
-  }
-  .chain.secondary {
     .link {
       background: @link-color-2;
     }
     .link:after {
       background: @link-color-2;
-    }  
+    }
+    .fade > .link {
+      background: none;
+      background-image: linear-gradient(
+        to left,
+        @link-color-2 -30%,
+        rgba(0,0,0,0) 70%
+      );
+    }
+  }
+
+  .interchain {
+    position: relative;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 0;
+    padding: 0;
+
+    .link {
+      display: inline-block;
+      position: relative;
+      width: @link-width;
+      height: @block-gap;
+      background: @link-color-3;
+    }
+    .link:after {
+      content: '';
+      display: block;
+      position: absolute;
+      border-radius: 100px;
+      height: @link-dot-size;
+      width: @link-dot-size;
+      background: @link-color-3;
+      z-index: 10;
+      left: -(@link-dot-size / 2) + (@link-width / 2);
+      bottom: -(@link-dot-size / 2) - (@block-border-width / 2);
+    }
+    .link:before {
+      content: '';
+      display: block;
+      position: absolute;
+      border-radius: 100px;
+      height: @link-dot-size;
+      width: @link-dot-size;
+      background: @link-color-3;
+      z-index: 10;
+      left: -(@link-dot-size / 2) + (@link-width / 2);
+      top: -(@link-dot-size / 2) - (@block-border-width / 2);
+    }
   }
 }
 

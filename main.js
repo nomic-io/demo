@@ -24,29 +24,45 @@ function chainView (state, emit) {
     <section class="chains">
       <div class="chain">
         <label><span>Bitcoin Testnet</span></label>
-        <div class="block"></div>
+        <div class="fade"><div class="link"></div></div>
+        ${block()}
         <div class="link"></div>
-        <div class="block"></div>
+        ${block()}
         <div class="link"></div>
-        <div class="block">
-          <div class="content">
-            <span>#654,321</span>
-          </div>
-        </div>
+        ${block()}
+      </div>
+      <div class="interchain">
+        <div class="link c0"></div>
       </div>
       <div class="chain secondary">
-        <div class="block"></div>
+        <div class="fade"><div class="link"></div></div>
+        ${block()}
         <div class="link"></div>
-        <div class="block"></div>
+        ${block()}
         <div class="link"></div>
-        <div class="block">
-          <div class="content">
-            <span>#654,321</span>
-          </div>
-        </div>
+        ${block()}
         <label><span>Nomic Sidechain Testnet</span></label>
       </div>
     </section>
+  `
+}
+
+function block () {
+  return html`
+    <div class="block">
+      <div class="content">
+        <span>#123,456</span>
+        <br>
+        <span class="hash">00..a1b2c3d4</span>
+        <br>
+        <br>
+        <span>
+          <label>Foo</label>
+          <span>Bar</span><span class="separator"></span><label>Foo</label>
+          <span>Bar</span>
+        </span>
+      </div>
+    </div>
   `
 }
 
