@@ -19,6 +19,7 @@ function mainView (state, emit) {
 function chainView (state, emit) {
   return html`
     <div class="chain">
+      <label><span>Bitcoin Testnet</span></label>
       <div class="block"></div>
       <div class="link"></div>
       <div class="block"></div>
@@ -28,6 +29,18 @@ function chainView (state, emit) {
           <span>#654,321</span>
         </div>
       </div>
+    </div>
+    <div class="chain secondary">
+      <div class="block"></div>
+      <div class="link"></div>
+      <div class="block"></div>
+      <div class="link"></div>
+      <div class="block">
+        <div class="content">
+          <span>#654,321</span>
+        </div>
+      </div>
+      <label><span>Nomic Sidechain Testnet</span></label>
     </div>
   `
 }
