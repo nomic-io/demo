@@ -1,10 +1,13 @@
 @background: #eee;
 
-@block-width: 130px;
-@block-height: 86px;
-@block-gap: 64px;
+@block-width: 90px;
+@block-height: 70px;
+@block-radius: 8px;
+@block-gap: 34px;
 @block-color: white;//rgb(0, 134, 249);
 @block-border-width: 3px;
+
+@interchain-gap: 70px;
 
 @link-color-1: rgb(255, 133, 34);//rgb(42, 89, 137);
 @link-color-2: rgb(148, 37, 249);//rgb(42, 89, 137);
@@ -13,6 +16,7 @@
 @link-dot-size: 9px;
 
 html {
+  background: @background;
   margin: 0;
   padding: 0;
 }
@@ -31,11 +35,10 @@ section {
 
 .logo {
   display: block;
-  max-width: 400px;
+  max-width: 320px;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 60px;
 }
 
 section.chains {
@@ -86,7 +89,7 @@ section.chains {
       width: @block-width;
       height: @block-height;
 
-      border-radius: 6px;
+      border-radius: @block-radius;
 
       .content {
         position: absolute;
@@ -118,6 +121,32 @@ section.chains {
           border-left: 1px solid #ddd;
           margin-right: 6px;
         }
+      }
+    }
+
+    .block.mining {
+      border: none;
+      background: none;
+      width: @block-width + @block-border-width * 2 + 1;
+      height: @block-height + @block-border-width * 2 + 1;
+
+      svg path {
+        stroke-dasharray: 8 5.05;
+        animation: dash 600s linear infinite;
+
+        @keyframes dash {
+          to {
+            stroke-dashoffset: 10000;
+          }
+        }
+      }
+
+      .content {
+        margin-top: @block-border-width;
+        margin-bottom: @block-border-width;
+        margin-left: @block-border-width;
+        margin-right: @block-border-width;
+        color: #bbb;
       }
     }
 
@@ -155,8 +184,8 @@ section.chains {
         background: none;
         background-image: linear-gradient(
           to left,
-          rgba(@link-color-1, 0.5) -30%,
-          rgba(0,0,0,0) 70%
+          rgba(@link-color-1, 0.5) -10%,
+          rgba(0,0,0,0) 90%
         );
       }
     }
@@ -172,8 +201,8 @@ section.chains {
       background: none;
       background-image: linear-gradient(
         to left,
-        @link-color-2 -30%,
-        rgba(0,0,0,0) 70%
+        rgba(@link-color-2, 0.5) -10%,
+        rgba(0,0,0,0) 90%
       );
     }
   }
@@ -186,12 +215,19 @@ section.chains {
     line-height: 0;
     padding: 0;
 
+    .block {
+      display: inline-block;
+      width: @block-width + @block-gap;
+    }
+
     .link {
       display: inline-block;
       position: relative;
       width: @link-width;
-      height: @block-gap;
-      background: @link-color-3;
+      height: @interchain-gap;
+      border-left: @link-width solid @link-color-3;
+      margin-left: (@block-width + (@block-border-width * 2)) / 2 + (@block-gap / 2) - @link-width / 2;
+      margin-right: (@block-width + (@block-border-width * 2)) / 2 + (@block-gap / 2) + @link-width / 2;
     }
     .link:after {
       content: '';
@@ -202,7 +238,7 @@ section.chains {
       width: @link-dot-size;
       background: @link-color-3;
       z-index: 10;
-      left: -(@link-dot-size / 2) + (@link-width / 2);
+      left: -(@link-dot-size / 2) - (@link-width / 2);
       bottom: -(@link-dot-size / 2) - (@block-border-width / 2);
     }
     .link:before {
@@ -214,9 +250,22 @@ section.chains {
       width: @link-dot-size;
       background: @link-color-3;
       z-index: 10;
-      left: -(@link-dot-size / 2) + (@link-width / 2);
+      left: -(@link-dot-size / 2) - (@link-width / 2);
       top: -(@link-dot-size / 2) - (@block-border-width / 2);
     }
+  }
+
+  .link.mining {
+    background: none !important;
+    background-image: linear-gradient(
+      to right,
+      #bbb 50%,
+      rgba(0,0,0,0) 50%
+    ) !important;
+    background-size: 12px 8px !important;
+  }
+  .link.mining:after {
+    background: #bbb !important;
   }
 }
 
