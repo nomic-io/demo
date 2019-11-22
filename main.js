@@ -28,13 +28,14 @@ function chainView (state, emit) {
         ${block()}
         <div class="link skip"></div>
         ${block()}
-        <div class="link mining"></div>
+        <div class="link skip mining"></div>
         ${block({ mining: 'Mining' })}
       </div>
       <div class="interchain">
         <div class="link"></div>
         <div class="block"></div>
         <div class="link"></div>
+        <div class="block"></div>
         <div class="block"></div>
       </div>
       <div class="chain secondary">
@@ -44,6 +45,8 @@ function chainView (state, emit) {
         ${block({ stack: 3 })}
         <div class="link"></div>
         ${block()}
+        <div class="link"></div>
+        ${ block({ stack: 3 }) }
         <div class="link mining"></div>
         ${block({ mining: 'Validating' })}
         <label><span>Nomic Sidechain Testnet</span></label>
@@ -55,7 +58,7 @@ function chainView (state, emit) {
 function block (opts = {}) {
   if (!opts.mining) {
     return html`
-      <div class="block ${`stack${Math.max(3, opts.stack)}`}">
+      <div class="block ${`stack${Math.max(3, opts.stack)}`} ${opts.drop ? 'drop' : ''}">
         <div class="content">
           <span>#123,456</span>
           <br>
