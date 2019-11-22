@@ -26,9 +26,7 @@ function chainView (state, emit) {
         <label><span>Bitcoin Testnet</span></label>
         <div class="fade"><div class="link"></div></div>
         ${block()}
-        <div class="link"></div>
-        ${block()}
-        <div class="link"></div>
+        <div class="link skip"></div>
         ${block()}
         <div class="link mining"></div>
         ${block({ mining: 'Mining' })}
@@ -43,7 +41,7 @@ function chainView (state, emit) {
         <div class="fade"><div class="link"></div></div>
         ${block()}
         <div class="link"></div>
-        ${block()}
+        ${block({ stack: 3 })}
         <div class="link"></div>
         ${block()}
         <div class="link mining"></div>
@@ -55,11 +53,9 @@ function chainView (state, emit) {
 }
 
 function block (opts = {}) {
-  let mining = opts.mining
-
-  if (!mining) {
+  if (!opts.mining) {
     return html`
-      <div class="block">
+      <div class="block ${`stack${Math.max(3, opts.stack)}`}">
         <div class="content">
           <span>#123,456</span>
           <br>
@@ -71,6 +67,13 @@ function block (opts = {}) {
             <span>Bar</span><span class="separator"></span><label>Foo</label>
             <span>Bar</span>
           </span> -->
+          ${opts.stack ? 
+            html`
+              <span class="stack-count">
+                ${opts.stack}
+              </span>
+            ` : null
+          }
         </div>
       </div>
     `
@@ -102,7 +105,7 @@ function block (opts = {}) {
         </svg>
         <div class="content">
           <br>
-          <span>${mining}</span>
+          <span>${opts.mining}</span>
           <br>
           <br>
           <!-- <span>

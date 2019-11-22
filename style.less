@@ -3,9 +3,10 @@
 @block-width: 90px;
 @block-height: 70px;
 @block-radius: 8px;
-@block-gap: 34px;
+@block-gap: 40px;
 @block-color: white;//rgb(0, 134, 249);
 @block-border-width: 3px;
+@block-stack-shrink: 0.93;
 
 @interchain-gap: 70px;
 
@@ -90,6 +91,7 @@ section.chains {
       height: @block-height;
 
       border-radius: @block-radius;
+      z-index: 1;
 
       .content {
         position: absolute;
@@ -98,10 +100,10 @@ section.chains {
         bottom: 0;
         left: 0;
         text-align: center;
-        padding: 9px 4px;
+        padding: 7px 4px;
         color: #777;
-        font-size: 0.9em;
-        line-height: 1.15em;
+        font-size: 0.87em;
+        line-height: 1.07em;
 
         label {
           text-transform: uppercase;
@@ -120,6 +122,16 @@ section.chains {
           margin-left: 6px;
           border-left: 1px solid #ddd;
           margin-right: 6px;
+        }
+
+        .stack-count {
+          float: right;
+          font-size: 0.9em;
+          background: #eee;
+          border-radius: 100px;
+          line-height: 0.9em;
+          padding: 2px 4px;
+          border: 1px solid #ddd;
         }
       }
     }
@@ -150,6 +162,44 @@ section.chains {
       }
     }
 
+    .block.stack2 {
+      position: relative;
+      left: 7px;
+      z-index: 1;
+    }
+    .block.stack3 {
+      position: relative;
+      left: 13px;
+      z-index: 1;
+    }
+    .block.stack2:before,
+    .block.stack3:before {
+      content: '';
+      position: absolute;
+      left: -3px - @block-border-width * 2;
+      top: @block-height * (1 - @block-stack-shrink) / 2 - @block-border-width;
+      background: @block-color;
+      width: 3px;
+      height: @block-height * @block-stack-shrink;
+      z-index: -1;
+      border-radius: @block-radius 0 0 @block-radius;
+      border: @block-border-width solid black;
+      border-right-width: 2px;
+    }
+    .block.stack3:after {
+      content: '';
+      position: absolute;
+      left: -9px - @block-border-width * 2;
+      top: @block-height * (1 - @block-stack-shrink * @block-stack-shrink) / 2 - @block-border-width;
+      background: @block-color;
+      width: 9px;
+      height: @block-height * @block-stack-shrink * @block-stack-shrink;
+      z-index: -2;
+      border-radius: @block-radius 0 0 @block-radius;
+      border: @block-border-width solid black;
+      border-right-width: 2px;
+    }
+
     .link {
       display: inline-block;
       position: relative;
@@ -172,6 +222,10 @@ section.chains {
       right: -(@link-dot-size / 2) - (@block-border-width / 2);
     }
 
+    .link.skip {
+      width: @block-gap * 2 + @block-width + @block-border-width * 2;
+    }
+
     .fade {
       display: inline-block;
       position: relative;
@@ -184,8 +238,8 @@ section.chains {
         background: none;
         background-image: linear-gradient(
           to left,
-          rgba(@link-color-1, 0.5) -10%,
-          rgba(0,0,0,0) 90%
+          @link-color-1 0%,
+          rgba(0,0,0,0) 100%
         );
       }
     }
@@ -201,8 +255,8 @@ section.chains {
       background: none;
       background-image: linear-gradient(
         to left,
-        rgba(@link-color-2, 0.5) -10%,
-        rgba(0,0,0,0) 90%
+        @link-color-2 0%,
+        rgba(0,0,0,0) 100%
       );
     }
   }
