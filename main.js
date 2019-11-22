@@ -58,7 +58,7 @@ function chainView (state, emit) {
 function block (opts = {}) {
   if (!opts.mining) {
     return html`
-      <div class="block ${`stack${Math.max(3, opts.stack)}`} ${opts.drop ? 'drop' : ''}">
+      <div class="block ${`stack${Math.min(3, opts.stack)}`} ${opts.drop ? 'drop' : ''}">
         <div class="content">
           <span>#123,456</span>
           <br>
