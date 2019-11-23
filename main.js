@@ -48,7 +48,7 @@ function chainView (state, emit) {
         <div class="link"></div>
         ${ block({ stack: 3 }) }
         <div class="link mining"></div>
-        ${block({ mining: 'Validating' })}
+        ${block({ drop: true })}
         <label><span>Nomic Sidechain Testnet</span></label>
       </div>
     </section>
