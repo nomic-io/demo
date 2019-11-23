@@ -273,7 +273,10 @@ section.chains {
     }
 
     .link.skip {
-      width: @block-gap * 2 + @block-width + @block-border-width * 2;
+      width: @block-gap + @block-width + @block-border-width * 2;
+    }
+    .link.skip:after {
+      content: none;
     }
 
     .fade {
@@ -330,8 +333,8 @@ section.chains {
       width: @link-width;
       height: @interchain-gap;
       border-left: @link-width solid @link-color-3;
-      margin-left: (@block-width + @block-border-width) / 2 + (@block-gap / 2) - @link-width / 2;
-      margin-right: (@block-width + @block-border-width) / 2 + (@block-gap / 2) - @link-width / 2;
+      margin-left: (@block-width + @block-border-width) / 2 + (@block-gap) - @link-width / 2;
+      margin-right: (@block-width + @block-border-width) / 2 - @link-width / 2;
     }
     .link:after {
       content: '';
