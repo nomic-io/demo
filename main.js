@@ -43,7 +43,7 @@ function chainView (state, emit) {
     let first = firstBlocks[0]
     let second = secondBlocks[0]
     
-    if (second && second.link) {
+    if (second && !second.drop && second.link) {
       if (first.height === second.link) {
         // second links to first
         items.first.push(...linkAndBlock(firstBlocks.shift()))
@@ -64,12 +64,12 @@ function chainView (state, emit) {
       items.second.push(html`<div class="link skip"></div>`)
     } else if (secondBlocks.length > 1 && firstBlocks.length === 1) {
       // ran out of first chain blocks but still have second, add skip space
-      items.first.push(html`<div class="link skip"></div>`)
+      items.first.push(html`<div class="link skip ${(first.mining || first.drop) ? 'mining' : ''}"></div>`)
       items.inter.push(html`<div class="block z"></div>`)
       items.second.push(...linkAndBlock(secondBlocks.shift()))
     } else if (first && second && second.link !== first.height && !first.mining && !second.mining) {
       // first isn't linked by second, add some skip space
-      items.first.push(html`<div class="link skip ${first.mining ? 'mining' : ''} expand"></div>`)
+      items.first.push(html`<div class="link skip ${(first.mining || first.drop) ? 'mining' : ''} expand"></div>`)
       items.inter.push(html`<div class="block x"></div>`)
       items.second.push(...linkAndBlock(secondBlocks.shift()))
     } else {
@@ -178,7 +178,13 @@ function blockView (b, emit) {
   el.addEventListener('animationstart', (e) => {
     let link = e.target.previousElementSibling
     if (e.animationName === 'drop' || e.animationName === 'drop-secondary') {
-      setTimeout(() => link.classList.remove('mining'), 530)
+      setTimeout(() => {
+        link.classList.remove('mining')
+        if (link.previousElementSibling.classList.contains('link')) {
+          link.previousElementSibling.classList.remove('mining')
+        console.log('!!!!\n\n!!!!', link.previousElementSibling)
+        }
+      }, 530)
     } else if (e.animationName === 'fold') {
       link.classList.add('folding')
     } else if (e.animationName === 'fade') {
@@ -209,6 +215,7 @@ function blockView (b, emit) {
     } else if (e.animationName === 'fade') {
       e.target.previousElementSibling.classList.remove('fade')
       e.target.classList.remove('fade')
+      delete b.fade
     }
   })
 
@@ -234,7 +241,7 @@ function chainStore (state, emitter) {
       name: 'Bitcoin Testnet',
       blocks: [
         { height: 100000, hash: '0000000000123456789' },
-        { height: 100001, hash: '0000000000123456789' },
+        // { height: 100001, hash: '0000000000123456789' },
         { mining: true }
       ]
     },
@@ -242,9 +249,9 @@ function chainStore (state, emitter) {
       name: 'Nomic Sidechain Testnet',
       blocks: [
         { height: 1000000, hash: '0000000000123456789', link: 100000 },
-        { stack: 100, height: 1000001, hash: '0000000000123456789' },
-        { height: 1000002, hash: '0000000000123456789', link: 100001 },
-        { height: 1000003, hash: 'f000ab12cd0123456789' },
+        // { stack: 100, height: 1000001, hash: '0000000000123456789' },
+        // { height: 1000002, hash: '0000000000123456789', link: 100001 },
+        { height: 1000003, stack: 100, hash: 'f000ab12cd0123456789' },
         { mining: true }
       ]
     }
@@ -320,5 +327,9 @@ function chainStore (state, emitter) {
 
   setTimeout(() => {
     emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf', link: 100002 })
+    setInterval(() =>
+      emitter.emit('push-second', { height: Math.random() * 100000 | 0, hash: 'asdfasdfasf' }),
+      5000
+    )
   }, 5000)
 }
