@@ -17,6 +17,8 @@
 @link-dot-size: 9px;
 
 @drop-distance: 80px;
+@drop-glow-start: 5px;
+@drop-glow-end: 10px;
 
 @stack2-offset: 7px;
 @stack3-offset: 13px;
@@ -183,28 +185,37 @@ section.chains {
           opacity: 0;
           box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.1);
           animation-timing-function: ease-in;
+          border-color: #ddd;
         }
         12% {
           top: -@drop-distance; 
           opacity: 1;
           box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.15);
           animation-timing-function: cubic-bezier(0.05,0,0.9,0);
+          border-color: #ddd;
         }
         44% {
           top: 0;
           opacity: 1;
           box-shadow: 0 0 1px rgba(0,0,0,0.25);
+          border-color: #ddd;
         }
         44.01% {
-          box-shadow: 0 0 0 rgba(255,0,0,0.5);
+          box-shadow: 0 0 0 rgba(0,0,0,0.5);
+          border-color: inherit;
         }
         50% {
-          box-shadow: 0 0 0 6px rgba(@link-color-1, 0.5);
+          box-shadow:
+            0 0 0 (@drop-glow-start - @block-border-width - 1) @background,
+            0 0 0 @drop-glow-start rgba(@link-color-1, 0.4);
           z-index: 0;
         }
         100% {
-          box-shadow: 0 0 0 10px rgba(@link-color-1, 0);
+          box-shadow:
+            0 0 0 (@drop-glow-end - @block-border-width - 1) @background,
+            0 0 0 @drop-glow-end rgba(@link-color-1, 0);
           z-index: 0;
+          animation-timing-function: cubic-bezier(0,.67,0,1);
         }
       }
     }
@@ -437,28 +448,37 @@ section.chains {
           opacity: 0;
           box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.1);
           animation-timing-function: ease-in;
+          border-color: #ddd;
         }
         12% {
           top: -@drop-distance; 
           opacity: 1;
           box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.15);
           animation-timing-function: cubic-bezier(0.05,0,0.9,0);
+          border-color: #ddd;
         }
         44% {
           top: 0;
           opacity: 1;
           box-shadow: 0 0 1px rgba(0,0,0,0.25);
+          border-color: #ddd;
         }
         44.01% {
           box-shadow: 0 0 0 rgba(255,0,0,0.5);
+          border-color: inherit;
         }
         50% {
-          box-shadow: 0 0 0 6px rgba(@link-color-2, 0.5);
+          box-shadow:
+            0 0 0 (@drop-glow-start - @block-border-width - 1) @background,
+            0 0 0 @drop-glow-start rgba(@link-color-2, 0.4);
           z-index: 0;
         }
         100% {
-          box-shadow: 0 0 0 10px rgba(@link-color-2, 0);
+          box-shadow:
+            0 0 0 (@drop-glow-end - @block-border-width - 1) @background,
+            0 0 0 @drop-glow-end rgba(@link-color-2, 0);
           z-index: 0;
+          animation-timing-function: cubic-bezier(0,.67,0,1);
         }
       }
     }
