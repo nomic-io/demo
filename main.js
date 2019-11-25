@@ -25,11 +25,13 @@ function chainView (state, emit) {
     second: []
   }
 
+  console.log('chains', state.first.blocks, state.second.blocks)
+
   let block = (b) => blockView(b, emit)
-  let linkAndBlock = (b) => [
+  let linkAndBlock = (b) => b ? [
     html`<div class="link ${b.fade ? 'fade' : ''}"></div>`,
     block(b)
-  ]
+  ] : []
 
   let firstBlocks = state.first.blocks.slice()
   let secondBlocks = state.second.blocks.slice()
@@ -41,7 +43,7 @@ function chainView (state, emit) {
     let first = firstBlocks[0]
     let second = secondBlocks[0]
     
-    if (second.link) {
+    if (second && second.link) {
       if (first.height === second.link) {
         // second links to first
         items.first.push(...linkAndBlock(firstBlocks.shift()))
@@ -192,7 +194,11 @@ function blockView (b, emit) {
       }
     } else if (e.animationName === 'fold') {
       console.log('folded', e)
-      emit('fold-second')
+      if (e.target.parentNode.classList.contains('secondary')) {
+        emit('fold-second')
+      } else {
+        emit('fold-first')
+      }
     } else if (e.animationName === 'fade') {
       e.target.previousElementSibling.classList.remove('fade')
       e.target.classList.remove('fade')
@@ -222,6 +228,7 @@ function chainStore (state, emitter) {
       blocks: [
         { height: 100000, hash: '0000000000123456789' },
         { height: 100001, hash: '0000000000123456789' },
+        { stack: 50, height: 1000003, hash: 'f000ab12cd0123456789' },
         { mining: true }
       ]
     },
@@ -237,35 +244,53 @@ function chainStore (state, emitter) {
     }
   }
 
-  emitter.on('push-second', function (block) {
-    let blocks = state.chains.second.blocks
-    let last = blocks[blocks.length - 1]
+  function push (chain) {
+    return function (block) {
+      let blocks = state.chains[chain].blocks
+      let last = blocks[blocks.length - 1]
 
-    if (last.mining) {
-      blocks.pop()
+      if (last.mining) {
+        blocks.pop()
+      }
+      if (last.link == null) {
+        block.fold = true
+      }
+
       block.drop = true
       blocks.push(block)
       emitter.emit('render')
     }
-  })
+  }
+  emitter.on('push-first', push('first'))
+  emitter.on('push-second', push('second'))
 
-  emitter.on('fold-second', function () {
-    let blocks = state.chains.second.blocks
+  function fold (chain) {
+    return function () {
+      let blocks = state.chains[chain].blocks
 
-    let last = blocks.pop()
-    let under = blocks.pop()
+      let last = blocks.pop()
+      let under = blocks.pop()
 
-    last.stack = (under.stack || 1) + 1
-    delete last.drop
-    delete last.fold
-    blocks.push(last)
+      if (under.link != null) {
+        blocks.push(under)
+        blocks.push(last)
+      } else {
+        last.stack = (under.stack || 1) + 1
+        last.fold = true
+        delete last.drop
+        delete last.fold
+        blocks.push(last)
+      }
 
-    blocks.push({ mining: 'Validating', fade: true })
+      blocks.push({ mining: true, fade: true })
 
-    emitter.emit('render')
-  })
+      emitter.emit('render')
+    }
+  }
+  emitter.on('fold-first', fold('first'))
+  emitter.on('fold-second', fold('second'))
 
   setInterval(() => {
-    emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf', fold: true })
+    emitter.emit('push-first', { height: 1234, hash: 'asdfasdfasf' })
   }, 2000)
 }
