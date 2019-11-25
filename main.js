@@ -61,7 +61,7 @@ function chainView (state, emit) {
       // ran out of second chain blocks but still have first, add skip space
       items.first.push(...linkAndBlock(firstBlocks.shift()))
       items.inter.push(html`<div class="block w"></div>`)
-      items.second.push(html`<div class="link skip"></div>`)
+      items.second.push(html`<div class="link skip ${(second.mining || second.drop) ? 'mining' : ''}"></div>`)
     } else if (secondBlocks.length > 1 && firstBlocks.length === 1) {
       // ran out of first chain blocks but still have second, add skip space
       items.first.push(html`<div class="link skip ${(first.mining || first.drop) ? 'mining' : ''}"></div>`)
