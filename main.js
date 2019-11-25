@@ -57,23 +57,26 @@ function chainView (state, emit) {
         // second links to ancestor of first, error
         throw Error('cannot link to ancestor')
       }
+    } else if (firstBlocks.length > 1 && secondBlocks.length === 1) {
+      // ran out of second chain blocks but still have first, add skip space
+      items.first.push(...linkAndBlock(firstBlocks.shift()))
+      items.inter.push(html`<div class="block w"></div>`)
+      items.second.push(html`<div class="link skip"></div>`)
+    } else if (secondBlocks.length > 1 && firstBlocks.length === 1) {
+      // ran out of first chain blocks but still have second, add skip space
+      items.first.push(html`<div class="link skip"></div>`)
+      items.inter.push(html`<div class="block z"></div>`)
+      items.second.push(...linkAndBlock(secondBlocks.shift()))
+    } else if (first && second && second.link !== first.height && !first.mining && !second.mining) {
+      // first isn't linked by second, add some skip space
+      items.first.push(html`<div class="link skip ${first.mining ? 'mining' : ''} expand"></div>`)
+      items.inter.push(html`<div class="block x"></div>`)
+      items.second.push(...linkAndBlock(secondBlocks.shift()))
     } else {
-      // check if our descendant links to first block
-      let linkedByDescendant = !!secondBlocks
-        .slice(1)
-        .find(desc => desc.link === first.height)
-
-      if (linkedByDescendant) {
-        // first is linked to by our descendant, add some skip space
-        items.first.push(html`<div class="link skip ${first.mining ? 'mining' : ''}"></div>`)
-        items.inter.push(html`<div class="block"></div>`)
-        items.second.push(...linkAndBlock(secondBlocks.shift()))
-      } else {
-        // first isn't linked to, show it next to second
-        items.first.push(...linkAndBlock(firstBlocks.shift()))
-        items.inter.push(html`<div class="block"></div>`)
-        items.second.push(...linkAndBlock(secondBlocks.shift()))
-      }
+      // first isn't linked to, show it next to second
+      items.first.push(...linkAndBlock(firstBlocks.shift()))
+      items.inter.push(html`<div class="block y"></div>`)
+      items.second.push(...linkAndBlock(secondBlocks.shift()))
     }
   }
 
@@ -175,24 +178,27 @@ function blockView (b, emit) {
   el.addEventListener('animationstart', (e) => {
     let link = e.target.previousElementSibling
     if (e.animationName === 'drop' || e.animationName === 'drop-secondary') {
-      setTimeout(() => e.target.previousElementSibling.classList.remove('mining'), 530)
+      setTimeout(() => link.classList.remove('mining'), 530)
     } else if (e.animationName === 'fold') {
       link.classList.add('folding')
     } else if (e.animationName === 'fade') {
-      console.log('fading in')
       link.classList.add('fade')
     }
   })
 
   el.addEventListener('animationend', (e) => {
+    console.log('end', e)
     if (e.animationName === 'drop' || e.animationName === 'drop-secondary') {
-      console.log('block dropped.', e)
-
+      e.target.classList.remove('drop')
       if (e.target.classList.contains('fold')) {
-        e.target.classList.remove('drop')
         e.target.classList.remove('fold')
         e.target.classList.add('folding')
-        console.log('folding')
+      } else {
+        if (e.target.parentNode.classList.contains('secondary')) {
+          emit('fold-second')
+        } else {
+          emit('fold-first')
+        }
       }
     } else if (e.animationName === 'fold') {
       if (e.target.parentNode.classList.contains('secondary')) {
@@ -249,15 +255,23 @@ function chainStore (state, emitter) {
       let blocks = state.chains[chain].blocks
       let last = blocks[blocks.length - 1]
 
+
       if (last.mining) {
         blocks.pop()
       }
-      if (last.link == null) {
-        block.fold = true
+      if (chain == 'second') {
+        let last = blocks[blocks.length - 1]
+        if (last.link == null && block.link == null) {
+          block.fold = true
+        }
+        console.log('push', last, block)
       }
 
-      block.drop = true
+      if (!block.mining) {
+        block.drop = true
+      }
       blocks.push(block)
+
       emitter.emit('render')
     }
   }
@@ -271,15 +285,21 @@ function chainStore (state, emitter) {
       let last = blocks.pop()
       let under = blocks.pop()
 
-      if (under.link != null) {
+      delete last.drop
+      delete last.fold
+
+      if (chain === 'first') {
         blocks.push(under)
         blocks.push(last)
-      } else {
-        last.stack = (under.stack || 1) + 1
-        last.fold = true
-        delete last.drop
-        delete last.fold
-        blocks.push(last)
+      } else if (chain === 'second') {
+        if (under.link != null || last.link != null) {
+          blocks.push(under)
+          blocks.push(last)
+        } else {
+          last.stack = (under.stack || 1) + 1
+          last.fold = true
+          blocks.push(last)
+        }
       }
 
       blocks.push({ mining: true, fade: true })
@@ -290,7 +310,15 @@ function chainStore (state, emitter) {
   emitter.on('fold-first', fold('first'))
   emitter.on('fold-second', fold('second'))
 
-  setInterval(() => {
+  setTimeout(() => {
     emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf' })
+  }, 1000)
+
+  setTimeout(() => {
+    emitter.emit('push-first', { height: 100002, hash: 'asdfasdfasf' })
   }, 3000)
+
+  setTimeout(() => {
+    emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf', link: 100002 })
+  }, 5000)
 }
