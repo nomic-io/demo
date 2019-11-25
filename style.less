@@ -18,6 +18,9 @@
 
 @drop-distance: 50px;
 
+@stack2-offset: 7px;
+@stack3-offset: 13px;
+
 html {
   background: @background;
   margin: 0;
@@ -140,8 +143,8 @@ section.chains {
     .block.mining {
       border: none;
       background: none;
-      width: @block-width + @block-border-width * 2 + 1;
-      height: @block-height + @block-border-width * 2 + 1;
+      width: @block-width + @block-border-width * 2;
+      height: @block-height + @block-border-width * 2;
 
       svg path {
         stroke-dasharray: 8 5.05;
@@ -160,66 +163,106 @@ section.chains {
         margin-left: @block-border-width;
         margin-right: @block-border-width;
         color: #bbb;
+
+        span.mining {
+          text-transform: uppercase;
+          position: relative;
+          top: 6px;
+          font-size: 0.85em;
+        }
       }
     }
     .block.drop {
       position: relative;
       z-index: 5;
-      animation: drop 2s ease-in infinite;
+      animation: drop 1.2s ease-in forwards;
 
       @keyframes drop {
         0% {
           top: -@drop-distance;
-          opacity: 0.4;
-          box-shadow: 0 @drop-distance 2px rgba(0,0,0,0.1);
+          opacity: 0;
+          box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.1);
           animation-timing-function: ease-in;
         }
-        9% {
+        12% {
           top: -@drop-distance; 
           opacity: 1;
-          box-shadow: 0 @drop-distance 2px rgba(0,0,0,0.1);
+          box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.15);
           animation-timing-function: cubic-bezier(0.05,0,0.9,0);
         }
-        27% {
+        44% {
           top: 0;
           opacity: 1;
-          box-shadow: 0 0 2px rgba(0,0,0,0.1);
+          box-shadow: 0 0 1px rgba(0,0,0,0.25);
         }
-        27.01% {
+        44.01% {
           box-shadow: 0 0 0 rgba(255,0,0,0.5);
         }
-        30% {
-          box-shadow: 0 0 0 8px rgba(@link-color-2, 0.5);
+        50% {
+          box-shadow: 0 0 0 6px rgba(@link-color-2, 0.5);
+          z-index: 0;
         }
-        84% {
-          box-shadow: 0 0 0 14px rgba(@link-color-2, 0);
+        100% {
+          box-shadow: 0 0 0 10px rgba(@link-color-2, 0);
+          z-index: 0;
         }
+      }
+    }
 
-        // 85% {
-        //   box-shadow: 0 0 30px rgba(@link-color-2, 0);
-        //   opacity: 1;
-        // }
-        // 90% {
-        //   top: 0;
-        //   opacity: 0;
-        //   animation-timing-function: ease-out;
-        // }
-        // 100% {
-        //   top: -@drop-distance;
-        //   opacity: 0;
-        //   animation-timing-function: ease-out;
-        // }
+    .block.folding {
+      position: relative;
+      animation: fold 0.3s ease-in-out forwards;
+      z-index: 5 !important;
+
+      @keyframes fold {
+        0% {
+          left: 0;
+        }
+        100% {
+          left: -@block-width - @block-gap + @stack3-offset / 2;
+        }
+      }
+    }
+
+    .link.folding {
+      position: relative;
+      animation: link-fold 0.6s ease-in-out forwards;
+      opacity: 0;
+      @keyframes link-fold {
+        0% {
+          left: 0;
+          opacity: 1;
+        }
+        100% {
+          left: -@block-width - @block-gap + @stack3-offset / 2;
+          opacity: 0;
+        }
+      }
+    }
+
+    .link.fade,
+    .block.fade {
+      opacity: 0 !important;
+      animation: fade 1s linear forwards;
+
+      @keyframes fade {
+        0% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
       }
     }
 
     .block.stack2 {
       position: relative;
-      left: 7px;
+      left: @stack2-offset;
       z-index: 1;
     }
     .block.stack3 {
       position: relative;
-      left: 13px;
+      left: @stack3-offset;
       z-index: 1;
     }
     .block.stack2:before,
@@ -279,23 +322,23 @@ section.chains {
       content: none;
     }
 
-    .fade {
-      display: inline-block;
-      position: relative;
-      height: 100%;
-      top: -@link-width;
+    // .fade {
+    //   display: inline-block;
+    //   position: relative;
+    //   height: 100%;
+    //   top: -@link-width;
       
-      > .link {
-        position: absolute;
-        left: -@block-gap;
-        background: none;
-        background-image: linear-gradient(
-          to left,
-          @link-color-1 0%,
-          rgba(0,0,0,0) 100%
-        );
-      }
-    }
+    //   > .link {
+    //     position: absolute;
+    //     left: -@block-gap;
+    //     background: none;
+    //     background-image: linear-gradient(
+    //       to left,
+    //       @link-color-1 0%,
+    //       rgba(0,0,0,0) 100%
+    //     );
+    //   }
+    // }
   }
   .chain:last-child {
     .link {
@@ -373,6 +416,13 @@ section.chains {
   }
   .link.mining:after {
     background: #bbb !important;
+  }
+
+  .chain .block.mining span.mining:before {
+    content: 'Mining';
+  }
+  .chain.secondary .block.mining span.mining:before {
+    content: 'Validating';
   }
 }
 

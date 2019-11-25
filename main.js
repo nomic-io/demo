@@ -5,7 +5,7 @@ let logo = require('./logo.png')
 
 let app = choo()
 app.use(devtools())
-app.use(countStore)
+app.use(chainStore)
 app.route('/', mainView)
 app.mount('body')
 
@@ -13,26 +13,7 @@ function mainView (state, emit) {
   return html`
     <body>
       <img class="logo" src=${logo} />
-      ${chainView({
-        first: {
-          name: 'Bitcoin Testnet',
-          blocks: [
-            { height: 100000, hash: '0000000000123456789' },
-            { height: 100001, hash: '0000000000123456789' },
-            { mining: true }
-          ]
-        },
-        second: {
-          name: 'Nomic Sidechain Testnet',
-          blocks: [
-            { height: 1000000, hash: '0000000000123456789', link: 100000 },
-            { stack: 100, height: 1000001, hash: '0000000000123456789' },
-            { height: 1000002, hash: '0000000000123456789', link: 100001 },
-            { stack: 50, height: 1000003, hash: 'f000ab12cd0123456789' },
-            { mining: true }
-          ]
-        }
-      })}
+      ${chainView(state.chains, emit)}
     </body>
   `
 }
@@ -44,6 +25,12 @@ function chainView (state, emit) {
     second: []
   }
 
+  let block = (b) => blockView(b, emit)
+  let linkAndBlock = (b) => [
+    html`<div class="link ${b.fade ? 'fade' : ''}"></div>`,
+    block(b)
+  ]
+
   let firstBlocks = state.first.blocks.slice()
   let secondBlocks = state.second.blocks.slice()
   let i = 0
@@ -53,24 +40,16 @@ function chainView (state, emit) {
 
     let first = firstBlocks[0]
     let second = secondBlocks[0]
-
-    console.log(i, first, second)
     
     if (second.link) {
       if (first.height === second.link) {
         // second links to first
-        items.first.push(html`<div class="link"></div>`)
-        items.first.push(block(firstBlocks.shift()))
-        
+        items.first.push(...linkAndBlock(firstBlocks.shift()))
         items.inter.push(html`<div class="link"></div>`)
-
-        items.second.push(html`<div class="link"></div>`)
-        items.second.push(block(secondBlocks.shift()))
+        items.second.push(...linkAndBlock(secondBlocks.shift()))
       } else if (first.height < second.link) {
         // second links to descendant of first, skip
-        items.first.push(html`<div class="link"></div>`)
-        items.first.push(block(firstBlocks.shift()))
-
+        items.first.push(...linkAndBlock(firstBlocks.shift()))
         items.inter.push(html`<div class="block"></div>`)
       } else if (first.height > second.link) {
         // second links to ancestor of first, error
@@ -85,20 +64,13 @@ function chainView (state, emit) {
       if (linkedByDescendant) {
         // first is linked to by our descendant, add some skip space
         items.first.push(html`<div class="link skip"></div>`)
-
         items.inter.push(html`<div class="block"></div>`)
-
-        items.second.push(html`<div class="link"></div>`)
-        items.second.push(block(secondBlocks.shift()))
+        items.second.push(...linkAndBlock(secondBlocks.shift()))
       } else {
         // first isn't linked to, show it next to second
-        items.first.push(html`<div class="link"></div>`)
-        items.first.push(block(firstBlocks.shift())) 
-
+        items.first.push(...linkAndBlock(firstBlocks.shift()))
         items.inter.push(html`<div class="block"></div>`)
-
-        items.second.push(html`<div class="link"></div>`)
-        items.second.push(block(secondBlocks.shift())) 
+        items.second.push(...linkAndBlock(secondBlocks.shift()))
       }
     }
   }
@@ -131,11 +103,11 @@ function chainView (state, emit) {
   `
 }
 
-function block (b) {
-  console.log(b)
+function blockView (b, emit) {
+  let el
   if (!b.mining) {
-    return html`
-      <div class="block ${`stack${Math.min(3, b.stack)}`} ${b.drop ? 'drop' : ''}">
+    el = html`
+      <div class="block ${`stack${Math.min(3, b.stack)}`} ${b.drop ? 'drop' : ''} ${b.fold ? 'fold' : ''}">
         <div class="content">
           <span>#${b.height.toLocaleString()}</span>
           <br>
@@ -163,7 +135,7 @@ function block (b) {
     let h = 70 - r - 3 * 2
 
     let path = `
-      m${r+2},3
+      m${r+1},2
       h${w}
       a${r},${r} 0 0 1 ${r},${r}
       v${h}
@@ -174,18 +146,18 @@ function block (b) {
       a${r},${r} 0 0 1 ${r},-${r}
     `
 
-    return html`
-      <div class="block mining">
+    el = html`
+      <div class="block mining ${b.fade ? 'fade' : ''}">
         <svg width="100%" height="100%">
           <path
             d=${path}
-            stroke="#bbb"
+            stroke="#ddd"
             stroke-width="3"
             fill="none" />
         </svg>
         <div class="content">
           <br>
-          <span>${b.mining}</span>
+          <span class="mining"></span>
           <br>
           <br>
           <!-- <span>
@@ -197,6 +169,37 @@ function block (b) {
       </div>
     `
   }
+
+  el.addEventListener('animationstart', (e) => {
+    let link = e.target.previousElementSibling
+    if (e.animationName === 'fold') {
+      link.classList.add('folding')
+    } else if (e.animationName === 'fade') {
+      console.log('fading in')
+      link.classList.add('fade')
+    }
+  })
+
+  el.addEventListener('animationend', (e) => {
+    if (e.animationName === 'drop') {
+      console.log('block dropped.', e)
+
+      if (e.target.classList.contains('fold')) {
+        e.target.classList.remove('drop')
+        e.target.classList.remove('fold')
+        e.target.classList.add('folding')
+        console.log('folding')
+      }
+    } else if (e.animationName === 'fold') {
+      console.log('folded', e)
+      emit('fold-second')
+    } else if (e.animationName === 'fade') {
+      e.target.previousElementSibling.classList.remove('fade')
+      e.target.classList.remove('fade')
+    }
+  })
+
+  return el
 }
 
 function truncateHash (hash) {
@@ -212,10 +215,57 @@ function truncateHash (hash) {
   }
 }
 
-function countStore (state, emitter) {
-  state.count = 0
-  emitter.on('increment', function (count) {
-    state.count += count
+function chainStore (state, emitter) {
+  state.chains = {
+    first: {
+      name: 'Bitcoin Testnet',
+      blocks: [
+        { height: 100000, hash: '0000000000123456789' },
+        { height: 100001, hash: '0000000000123456789' },
+        { mining: true }
+      ]
+    },
+    second: {
+      name: 'Nomic Sidechain Testnet',
+      blocks: [
+        { height: 1000000, hash: '0000000000123456789', link: 100000 },
+        { stack: 100, height: 1000001, hash: '0000000000123456789' },
+        { height: 1000002, hash: '0000000000123456789', link: 100001 },
+        { stack: 50, height: 1000003, hash: 'f000ab12cd0123456789' },
+        { mining: true }
+      ]
+    }
+  }
+
+  emitter.on('push-second', function (block) {
+    let blocks = state.chains.second.blocks
+    let last = blocks[blocks.length - 1]
+
+    if (last.mining) {
+      blocks.pop()
+      block.drop = true
+      blocks.push(block)
+      emitter.emit('render')
+    }
+  })
+
+  emitter.on('fold-second', function () {
+    let blocks = state.chains.second.blocks
+
+    let last = blocks.pop()
+    let under = blocks.pop()
+
+    last.stack = (under.stack || 1) + 1
+    delete last.drop
+    delete last.fold
+    blocks.push(last)
+
+    blocks.push({ mining: 'Validating', fade: true })
+
     emitter.emit('render')
   })
+
+  setInterval(() => {
+    emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf', fold: true })
+  }, 2000)
 }
