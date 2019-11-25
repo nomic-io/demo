@@ -29,7 +29,7 @@ function chainView (state, emit) {
 
   let block = (b) => blockView(b, emit)
   let linkAndBlock = (b) => b ? [
-    html`<div class="link ${b.fade ? 'fade' : ''}"></div>`,
+    html`<div class="link ${b.fade ? 'fade' : ''} ${(b.mining || b.drop) ? 'mining' : ''}"></div>`,
     block(b)
   ] : []
 
@@ -65,7 +65,7 @@ function chainView (state, emit) {
 
       if (linkedByDescendant) {
         // first is linked to by our descendant, add some skip space
-        items.first.push(html`<div class="link skip"></div>`)
+        items.first.push(html`<div class="link skip ${first.mining ? 'mining' : ''}"></div>`)
         items.inter.push(html`<div class="block"></div>`)
         items.second.push(...linkAndBlock(secondBlocks.shift()))
       } else {
@@ -174,7 +174,9 @@ function blockView (b, emit) {
 
   el.addEventListener('animationstart', (e) => {
     let link = e.target.previousElementSibling
-    if (e.animationName === 'fold') {
+    if (e.animationName === 'drop' || e.animationName === 'drop-secondary') {
+      setTimeout(() => e.target.previousElementSibling.classList.remove('mining'), 530)
+    } else if (e.animationName === 'fold') {
       link.classList.add('folding')
     } else if (e.animationName === 'fade') {
       console.log('fading in')
@@ -183,7 +185,7 @@ function blockView (b, emit) {
   })
 
   el.addEventListener('animationend', (e) => {
-    if (e.animationName === 'drop') {
+    if (e.animationName === 'drop' || e.animationName === 'drop-secondary') {
       console.log('block dropped.', e)
 
       if (e.target.classList.contains('fold')) {
@@ -193,7 +195,6 @@ function blockView (b, emit) {
         console.log('folding')
       }
     } else if (e.animationName === 'fold') {
-      console.log('folded', e)
       if (e.target.parentNode.classList.contains('secondary')) {
         emit('fold-second')
       } else {
@@ -228,7 +229,6 @@ function chainStore (state, emitter) {
       blocks: [
         { height: 100000, hash: '0000000000123456789' },
         { height: 100001, hash: '0000000000123456789' },
-        { stack: 50, height: 1000003, hash: 'f000ab12cd0123456789' },
         { mining: true }
       ]
     },
@@ -238,7 +238,7 @@ function chainStore (state, emitter) {
         { height: 1000000, hash: '0000000000123456789', link: 100000 },
         { stack: 100, height: 1000001, hash: '0000000000123456789' },
         { height: 1000002, hash: '0000000000123456789', link: 100001 },
-        { stack: 50, height: 1000003, hash: 'f000ab12cd0123456789' },
+        { height: 1000003, hash: 'f000ab12cd0123456789' },
         { mining: true }
       ]
     }
@@ -291,6 +291,6 @@ function chainStore (state, emitter) {
   emitter.on('fold-second', fold('second'))
 
   setInterval(() => {
-    emitter.emit('push-first', { height: 1234, hash: 'asdfasdfasf' })
-  }, 2000)
+    emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf' })
+  }, 3000)
 }
