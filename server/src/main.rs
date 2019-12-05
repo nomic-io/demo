@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{min, max};
 use bitcoincore_rpc::{
     self as btc_rpc,
     json as btc_json,
@@ -6,34 +6,13 @@ use bitcoincore_rpc::{
 };
 use tendermint::rpc as tm_rpc;
 use serde::{Deserialize, Serialize};
+use failure::{bail, Error};
+
+type Result<T> = std::result::Result<T, Error>;
 
 fn main() {
-    let websocket = ws::WebSocket::new(NullFactory).unwrap();
-    let broadcast = websocket.broadcaster();
-
-    let btc = bitcoin_rpc("localhost:18443").unwrap();
-    let mut btc_height = 0;
-
-    let tm = tendermint_rpc("kep.io:26657").unwrap();
-    let mut tm_height = 0;
-
-    std::thread::spawn(move || loop {
-        let btc_blocks = get_new_btc_blocks(&btc, btc_height).unwrap();
-        btc_blocks.last().map(|b| btc_height = b.height as u64);
-
-        let message = serde_json::to_string(&btc_blocks).unwrap();
-        broadcast.send(message).unwrap();
-
-        let tm_blocks = get_new_tm_blocks(&tm, tm_height).unwrap();
-        tm_blocks.last().map(|b| tm_height = b.height.value());
-
-        let message = serde_json::to_string(&tm_blocks).unwrap();
-        broadcast.send(message).unwrap();
-
-        std::thread::sleep_ms(500);
-    });
-
-    websocket.listen("localhost:8080").unwrap();
+    Server::new("localhost:18443", "kep.io:26657").unwrap()
+        .listen("localhost:8080").unwrap()
 }
 
 struct NullHandler;
@@ -48,7 +27,91 @@ impl ws::Factory for NullFactory {
     }
 }
 
-fn bitcoin_rpc(address: &str) -> btc_rpc::Result<btc_rpc::Client> {
+struct Server {
+    websocket: Option<ws::WebSocket<NullFactory>>,
+    broadcaster: ws::Sender,
+    bitcoin_rpc: btc_rpc::Client,
+    tendermint_rpc: tm_rpc::Client,
+    bitcoin_blocks: Vec<btc_json::GetBlockResult>,
+    tendermint_blocks: Vec<tendermint::block::Block>
+}
+
+impl Server {
+    pub fn new(btc_addr: &str, tm_addr: &str) -> Result<Self> {
+        let websocket = ws::WebSocket::new(NullFactory)?;
+        let broadcaster = websocket.broadcaster();
+
+        let bitcoin_rpc = connect_btc_rpc(btc_addr)?;
+        let tendermint_rpc = connect_tm_rpc(tm_addr)?;
+
+        print!("fetching initial block state...");
+        let tendermint_blocks = get_initial_tm_blocks(&tendermint_rpc)?;
+        println!(" done");
+
+        Ok(Server {
+            websocket: Some(websocket),
+            broadcaster,
+            bitcoin_rpc,
+            tendermint_rpc,
+            bitcoin_blocks: vec![],
+            tendermint_blocks
+        })
+    }
+
+    pub fn listen(mut self, listen_addr: &str) -> Result<()> {
+        let websocket = self.websocket.take().unwrap();
+
+        std::thread::spawn(move || loop {
+            let btc_blocks = self.get_new_btc_blocks().unwrap();
+
+            if !btc_blocks.is_empty() {
+                let message = serde_json::to_string(&btc_blocks).unwrap();
+                self.broadcast(format!("{}\n", message)).unwrap();
+            }
+
+            std::thread::sleep_ms(1000);
+        });
+
+        websocket.listen(listen_addr)?;
+
+        bail!("server stopped")
+    }
+
+    fn broadcast(&self, msg: String) -> Result<()> {
+        self.broadcaster.send(msg)?;
+        Ok(())
+    }
+
+    fn btc_height(&self) -> u64 {
+        match self.bitcoin_blocks.last() {
+            None => 0,
+            Some(block) => block.height as u64
+        }
+    }
+
+    fn get_new_btc_blocks(
+        &mut self
+    ) -> btc_rpc::Result<Vec<btc_json::GetBlockResult>> {
+        let height = self.bitcoin_rpc.get_block_count()?;
+
+        let mut blocks = vec![];
+        let start_height = max(
+            self.btc_height(),
+            max(height, 5) - 5
+        ) + 1;
+
+        for h in start_height..=height {
+            let hash = self.bitcoin_rpc.get_block_hash(h)?;
+            let block = self.bitcoin_rpc.get_block_info(&hash)?;
+            blocks.push(block.clone());
+            self.bitcoin_blocks.push(block);
+        }
+
+        Ok(blocks)
+    }
+}
+
+fn connect_btc_rpc(address: &str) -> btc_rpc::Result<btc_rpc::Client> {
     use btc_rpc::{Auth, Client};
 
     let user = std::env::var("BTC_RPC_USER")
@@ -59,49 +122,31 @@ fn bitcoin_rpc(address: &str) -> btc_rpc::Result<btc_rpc::Client> {
     Client::new(format!("http://{}", address), auth)
 }
 
-fn get_new_btc_blocks(
-    rpc: &btc_rpc::Client,
-    current_height: u64
-) -> btc_rpc::Result<Vec<btc_json::GetBlockResult>> {
-    let height = rpc.get_block_count()?;
-
-    let mut blocks = vec![];
-    let start_height = max(
-        current_height,
-        max(height, 5) - 5
-    ) + 1;
-
-    for h in start_height..=height {
-        let hash = rpc.get_block_hash(h)?;
-        let block = rpc.get_block_info(&hash)?;
-        blocks.push(block);
-    }
-
-    Ok(blocks)
-}
-
-fn tendermint_rpc(
-    address: &str
-) -> Result<tm_rpc::Client, tm_rpc::Error> {
+fn connect_tm_rpc(address: &str) -> Result<tm_rpc::Client> {
     let address = address.parse().expect("invalid address");
-    tm_rpc::Client::new(&address)
+    Ok(tm_rpc::Client::new(&address)?)
 }
 
-fn get_new_tm_blocks(
-    rpc: &tm_rpc::Client,
-    current_height: u64
-) -> Result<Vec<tendermint::block::Header>, tm_rpc::Error> {
-    let height = rpc.status()?.sync_info.latest_block_height.value();
+fn get_initial_tm_blocks(
+    rpc: &tm_rpc::Client
+) -> Result<Vec<tendermint::block::Block>> {
+    let height = rpc.status()?.sync_info.latest_block_height;
 
-    let mut blocks = vec![];
-    let start_height = max(
-        current_height,
-        max(height, 5) - 5
-    ) + 1;
+    let mut blocks: Vec<tendermint::block::Block> = vec![];
 
-    for h in start_height..=height {
-        let res = rpc.block(h)?;
-        blocks.push(res.block.header);
+    for i in 0..500 {
+        let block = rpc.block(height.value() - i)?.block;
+
+        let before_populated = match blocks.last() {
+            None => true,
+            Some(prev) => prev.header.height == block.header.height
+        };
+
+        if block.header.num_txs == 0 && !before_populated {
+            continue;
+        }
+
+        blocks.push(block);
     }
 
     Ok(blocks)
