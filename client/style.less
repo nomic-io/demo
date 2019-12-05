@@ -14,14 +14,14 @@
 @link-color-2: rgb(148, 37, 249);//rgb(42, 89, 137);
 @link-color-3: rgb(0, 162, 255);//rgb(42, 89, 137);
 @link-width: 3px;
-@link-dot-size: 9px;
+@link-dot-size: 0;
 
 @drop-distance: 80px;
 @drop-glow-start: 5px;
 @drop-glow-end: 10px;
 
-@stack2-offset: 7px;
-@stack3-offset: 13px;
+@stack2-offset: 6px;
+@stack3-offset: 12px;
 
 html {
   background: @background;
@@ -322,7 +322,7 @@ section.chains {
       height: @link-dot-size;
       width: @link-dot-size;
       background: @link-color-1;
-      z-index: 2;
+      z-index: 3;
       right: -(@link-dot-size / 2) - (@block-border-width / 2);
     }
 
