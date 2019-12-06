@@ -85,7 +85,6 @@ function chainView (state, emit) {
       <div class="chain">
         <label><span>${state.first.name}</span></label>
         <!--<div class="fade"><div class="link"></div></div>
-        ${state.first.blocks.map(() => {})}
         <div class="link skip"></div>
         <div class="link skip mining"></div>
         ${block({ mining: 'Mining' })}-->
@@ -240,7 +239,7 @@ function chainStore (state, emitter) {
     first: {
       name: 'Bitcoin Testnet',
       blocks: [
-        { height: 100000, hash: '0000000000123456789' },
+        // { height: 100000, hash: '0000000000123456789' },
         // { height: 100001, hash: '0000000000123456789' },
         { mining: true }
       ]
@@ -248,10 +247,10 @@ function chainStore (state, emitter) {
     second: {
       name: 'Nomic Sidechain Testnet',
       blocks: [
-        { height: 1000000, hash: '0000000000123456789', link: 100000 },
+        // { height: 1000000, hash: '0000000000123456789', link: 100000 },
         // { stack: 100, height: 1000001, hash: '0000000000123456789' },
         // { height: 1000002, hash: '0000000000123456789', link: 100001 },
-        { height: 1000003, stack: 100, hash: 'f000ab12cd0123456789' },
+        // { height: 1000003, stack: 100, hash: 'f000ab12cd0123456789' },
         { mining: true }
       ]
     }
@@ -262,11 +261,10 @@ function chainStore (state, emitter) {
       let blocks = state.chains[chain].blocks
       let last = blocks[blocks.length - 1]
 
-
       if (last.mining) {
         blocks.pop()
       }
-      if (chain == 'second') {
+      if (chain === 'second') {
         let last = blocks[blocks.length - 1]
         if (last.link == null && block.link == null) {
           block.fold = true
@@ -279,6 +277,7 @@ function chainStore (state, emitter) {
       }
       blocks.push(block)
 
+      emitter.emit('shift')
       emitter.emit('render')
     }
   }
@@ -303,7 +302,7 @@ function chainStore (state, emitter) {
           blocks.push(under)
           blocks.push(last)
         } else {
-          last.stack = (under.stack || 1) + 1
+          last.stack = last.height - blocks[blocks.length - 1].height
           last.fold = true
           blocks.push(last)
         }
@@ -317,19 +316,116 @@ function chainStore (state, emitter) {
   emitter.on('fold-first', fold('first'))
   emitter.on('fold-second', fold('second'))
 
-  setTimeout(() => {
-    emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf' })
-  }, 1000)
+  emitter.on('shift', function () {
+    while (state.chains.second.blocks.length > 6
+      || state.chains.second.blocks[0].link == null) {
+      let shifted = state.chains.second.blocks.shift()
+      if (shifted.link != null) {
+        while (state.chains.first.blocks[0].height <= shifted.link) {
+          state.chains.first.blocks.shift()
+        }
+      }
+      if (state.chains.second.blocks.length > 0) {
+        delete state.chains.second.blocks[0].stack
+      }
+    }
+  })
 
-  setTimeout(() => {
-    emitter.emit('push-first', { height: 100002, hash: 'asdfasdfasf' })
-  }, 3000)
+  // setTimeout(() => {
+  //   emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf' })
+  // }, 1000)
 
-  setTimeout(() => {
-    emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf', link: 100002 })
-    setInterval(() =>
-      emitter.emit('push-second', { height: Math.random() * 100000 | 0, hash: 'asdfasdfasf' }),
-      5000
-    )
-  }, 5000)
+  // setTimeout(() => {
+  //   emitter.emit('push-first', { height: 100002, hash: 'asdfasdfasf' })
+  // }, 3000)
+
+  // setTimeout(() => {
+  //   emitter.emit('push-second', { height: 1234, hash: 'asdfasdfasf', link: 100002 })
+  //   setInterval(() =>
+  //     emitter.emit('push-second', { height: Math.random() * 100000 | 0, hash: 'asdfasdfasf' }),
+  //     5000
+  //   )
+  // }, 5000)
+
+  let queues = {
+    first: [],
+    second: []
+  }
+
+  let ws = new WebSocket('ws://localhost:8080')
+  let initialized = false
+  ws.onmessage = function ({ data }) {
+    data = JSON.parse(data)
+    console.log('<<', data)
+
+    if (!initialized) {
+      initialized = true
+
+      state.chains.first.blocks.unshift(...data.bitcoin.map(formatBtcBlock))
+      let tmBlocks = data.tendermint.map(formatTmBlock)
+        .sort((a, b) => a.height - b.height) // ?
+      state.chains.second.blocks.unshift(...tmBlocks)
+      let prev = null
+      for (let block of state.chains.second.blocks) {
+        if (prev != null) {
+          block.stack = block.height - prev.height
+          if (block.stack == 1) delete block.stack
+        }
+        prev = block
+      }
+      emitter.emit('shift')
+      emitter.emit('render')
+
+      setInterval(function () {
+        if (queues.first.length > 0) {
+          let last = queues.first[queues.first.length - 1]
+          queues.first = []
+          emitter.emit('push-first', formatBtcBlock(last))
+          return
+        }
+        if (queues.second.length > 0) {
+          let last = queues.second[queues.second.length - 1]
+          queues.second = []
+          emitter.emit('push-second', formatTmBlock(last))
+          return
+        }
+      }, 2000)
+
+      return
+    }
+
+    queues.first.push(...data.bitcoin)
+    queues.second.push(...data.tendermint)
+  }
+
+  function formatBtcBlock(block) {
+    return {
+      height: block.height,
+      hash: block.hash,
+      time: new Date(block.time * 1000)
+    }
+  }
+
+  let lastLink = null
+  function formatTmBlock(block) {
+    let link = null
+
+    console.log('formatTmBlock', lastLink, state.chains)
+
+    if (block.data.txs != null) {
+      if (lastLink == null) {
+        link = state.chains.first.blocks[0].height
+      } else {
+        link = lastLink + 1
+      }
+      lastLink = link
+    }
+
+    return {
+      height: Number(block.header.height),
+      hash: block.header.last_commit_hash, // :P
+      time: new Date(block.header.time),
+      link
+    }
+  }
 }
