@@ -5,7 +5,8 @@
   },
   "dependencies": {
     "choo": "^7.0.0",
-    "choo-devtools": "^3.0.3"
+    "choo-devtools": "^3.0.3",
+    "timeago.js": "^4.0.1"
   },
   "name": "nomic-demo",
   "version": "1.0.0",

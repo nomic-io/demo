@@ -14,7 +14,7 @@ use failure::{bail, Error};
 type Result<T> = std::result::Result<T, Error>;
 
 fn main() {
-    let server = Server::new("localhost:18443", "kep.io:26657").unwrap();
+    let server = Server::new("localhost:18332", "kep.io:26657").unwrap();
 
     let mut settings: ws::Settings = Default::default();
     settings.out_buffer_capacity = 1024 * 128;
@@ -167,9 +167,8 @@ impl Server {
         for h in start_height..=height {
             let res = self.tendermint_rpc.block(h)?;
 
-            let populated = res.block.header.num_txs != 0;
-            let after_populated = tendermint_blocks.back().unwrap()
-                .header.num_txs != 0;
+            let populated = has_header_tx(&res.block);
+            let after_populated = has_header_tx(tendermint_blocks.back().unwrap());
 
             // replace last
             if !populated && !after_populated {
@@ -181,7 +180,7 @@ impl Server {
 
             blocks.push(res.block.clone());
             tendermint_blocks.push_back(res.block);
-            while tendermint_blocks.len() > 7 {
+            while tendermint_blocks.len() > 6 {
                 tendermint_blocks.pop_front();
             }
         }
@@ -214,19 +213,31 @@ fn get_initial_tm_blocks(
     let mut blocks: VecDeque<tendermint::block::Block> = Default::default();
 
     for i in 0..500 {
+        if i == height.value() {
+            break;
+        }
+
         let block = rpc.block(height.value() - i)?.block;
 
         let before_populated = match blocks.back() {
             None => true,
-            Some(prev) => prev.header.height == block.header.height
+            Some(prev) => prev.header.height.value() + 1 == block.header.height.value()
         };
 
-        if block.header.num_txs == 0 && !before_populated {
-            continue;
+        if has_header_tx(&block) || before_populated {
+            blocks.push_back(block);
         }
-
-        blocks.push_back(block);
     }
 
     Ok(blocks)
+}
+
+fn has_header_tx(block: &tendermint::block::Block) -> bool {
+    for tx in block.data.iter() {
+        if &tx.as_bytes()[2..8] == b"Header" {
+            return true;
+        }
+    }
+
+    false
 }

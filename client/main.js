@@ -2,6 +2,26 @@ let html = require('choo/html')
 let devtools = require('choo-devtools')
 let choo = require('choo')
 let logo = require('./logo.png')
+let timeago = require('timeago.js').format
+
+require('timeago.js').register('en_short', function (number, index) {
+  return [
+    ['1s ago', 'right now'],
+    ['%ss ago', 'in %ss'],
+    ['1m ago', 'in 1m'],
+    ['%sm ago', 'in %sm'],
+    ['1h ago', 'in 1h'],
+    ['%sh ago', 'in %sh'],
+    ['1d ago', 'in 1d'],
+    ['%sd ago', 'in %sd'],
+    ['1w ago', 'in 1w'],
+    ['%sw ago', 'in %sw'],
+    ['1mo ago', 'in 1mo'],
+    ['%smo ago', 'in %smo'],
+    ['1yr ago', 'in 1yr'],
+    ['%syr ago', 'in %syr'],
+  ][index]
+})
 
 let app = choo()
 app.use(devtools())
@@ -117,6 +137,7 @@ function blockView (b, emit) {
           <br>
           <span class="hash">${truncateHash(b.hash)}</span>
           <br>
+          <span class="ago">${timeago(b.time, 'en_short')}</span>
           <br>
           <!-- <span>
             <label>Foo</label>
@@ -235,26 +256,39 @@ function truncateHash (hash) {
 }
 
 function chainStore (state, emitter) {
-  state.chains = {
-    first: {
-      name: 'Bitcoin Testnet',
-      blocks: [
-        // { height: 100000, hash: '0000000000123456789' },
-        // { height: 100001, hash: '0000000000123456789' },
-        { mining: true }
-      ]
-    },
-    second: {
-      name: 'Nomic Sidechain Testnet',
-      blocks: [
-        // { height: 1000000, hash: '0000000000123456789', link: 100000 },
-        // { stack: 100, height: 1000001, hash: '0000000000123456789' },
-        // { height: 1000002, hash: '0000000000123456789', link: 100001 },
-        // { height: 1000003, stack: 100, hash: 'f000ab12cd0123456789' },
-        { mining: true }
-      ]
-    }
+  let queues = {
+    first: [],
+    second: []
   }
+
+  let initialized = false
+  // function init () {
+    initialized = false
+    queues = {
+      first: [],
+      second: []
+    }
+    state.chains = {
+      first: {
+        name: 'Bitcoin Testnet',
+        blocks: [
+          // { height: 100000, hash: '0000000000123456789' },
+          // { height: 100001, hash: '0000000000123456789' },
+          { mining: true }
+        ]
+      },
+      second: {
+        name: 'Nomic Sidechain Testnet',
+        blocks: [
+          // { height: 1000000, hash: '0000000000123456789', link: 100000 },
+          // { stack: 100, height: 1000001, hash: '0000000000123456789' },
+          // { height: 1000002, hash: '0000000000123456789', link: 100001 },
+          // { height: 1000003, stack: 100, hash: 'f000ab12cd0123456789' },
+          { mining: true }
+        ]
+      }
+    }
+  // }
 
   function push (chain) {
     return function (block) {
@@ -317,18 +351,18 @@ function chainStore (state, emitter) {
   emitter.on('fold-second', fold('second'))
 
   emitter.on('shift', function () {
-    while (state.chains.second.blocks.length > 6
-      || state.chains.second.blocks[0].link == null) {
-      let shifted = state.chains.second.blocks.shift()
-      if (shifted.link != null) {
-        while (state.chains.first.blocks[0].height <= shifted.link) {
-          state.chains.first.blocks.shift()
-        }
-      }
-      if (state.chains.second.blocks.length > 0) {
-        delete state.chains.second.blocks[0].stack
-      }
-    }
+    // while (state.chains.second.blocks.length > 6
+    //   || state.chains.second.blocks[0].link == null) {
+    //   let shifted = state.chains.second.blocks.shift()
+    //   if (shifted.link != null) {
+    //     while (state.chains.first.blocks[0].height <= shifted.link) {
+    //       state.chains.first.blocks.shift()
+    //     }
+    //   }
+    //   if (state.chains.second.blocks.length > 0) {
+    //     delete state.chains.second.blocks[0].stack
+    //   }
+    // }
   })
 
   // setTimeout(() => {
@@ -347,13 +381,9 @@ function chainStore (state, emitter) {
   //   )
   // }, 5000)
 
-  let queues = {
-    first: [],
-    second: []
-  }
+  let lastLink = null
 
   let ws = new WebSocket('ws://localhost:8080')
-  let initialized = false
   ws.onmessage = function ({ data }) {
     data = JSON.parse(data)
     console.log('<<', data)
@@ -364,6 +394,19 @@ function chainStore (state, emitter) {
       state.chains.first.blocks.unshift(...data.bitcoin.map(formatBtcBlock))
       let tmBlocks = data.tendermint.map(formatTmBlock)
         .sort((a, b) => a.height - b.height) // ?
+        .map((block) => {
+          if (!block.hasHeaderTx) return block
+        
+          if (lastLink == null) {
+            block.link = state.chains.first.blocks[0].height
+          } else {
+            block.link = lastLink + 1
+          }
+          lastLink = block.link
+          
+          return block
+        })
+
       state.chains.second.blocks.unshift(...tmBlocks)
       let prev = null
       for (let block of state.chains.second.blocks) {
@@ -398,7 +441,7 @@ function chainStore (state, emitter) {
     queues.second.push(...data.tendermint)
   }
 
-  function formatBtcBlock(block) {
+  function formatBtcBlock (block) {
     return {
       height: block.height,
       hash: block.hash,
@@ -406,26 +449,20 @@ function chainStore (state, emitter) {
     }
   }
 
-  let lastLink = null
-  function formatTmBlock(block) {
-    let link = null
-
-    console.log('formatTmBlock', lastLink, state.chains)
-
-    if (block.data.txs != null) {
-      if (lastLink == null) {
-        link = state.chains.first.blocks[0].height
-      } else {
-        link = lastLink + 1
-      }
-      lastLink = link
-    }
+  function formatTmBlock (block) {
+    let hasHeaderTx = (block.data.txs || []).some((txBase64) => {
+      let txJson = atob(txBase64)
+      return txJson.slice(2, 8) === 'Header'
+    })
 
     return {
       height: Number(block.header.height),
       hash: block.header.last_commit_hash, // :P
       time: new Date(block.header.time),
-      link
+      hasHeaderTx
     }
   }
+
+  // init()
+  // window.addEventListener('focus', init)
 }
