@@ -102,29 +102,35 @@ function chainView (state, emit) {
   }
 
   return html`
-    <section class="chains">
-      <div class="chain">
-        <label><span>${state.first.name}</span></label>
-        <!--<div class="fade"><div class="link"></div></div>
-        <div class="link skip"></div>
-        <div class="link skip mining"></div>
-        ${block({ mining: 'Mining' })}-->
-        ${items.first}
-      </div>
-      <div class="interchain">
-        <!-- <div class="link"></div>
-        <div class="block"></div>
-        <div class="link"></div>
-        <div class="block"></div>
-        <div class="block"></div> -->
-        ${items.inter}
-      </div>
-      <div class="chain secondary">
-        <!-- <div class="fade"><div class="link"></div></div> -->
-        ${items.second}
-        <label><span>${state.second.name}</span></label>
-      </div>
-    </section>
+    <div class="chain-container">
+      <label><span>${state.first.name}</span></label>
+      <section class="chains">
+        <div class="inner">
+          <div class="inner2">
+            <div class="chain">
+              <!--<div class="fade"><div class="link"></div></div>
+              <div class="link skip"></div>
+              <div class="link skip mining"></div>
+              ${block({ mining: 'Mining' })}-->
+              ${items.first}
+            </div>
+            <div class="interchain">
+              <!-- <div class="link"></div>
+              <div class="block"></div>
+              <div class="link"></div>
+              <div class="block"></div>
+              <div class="block"></div> -->
+              ${items.inter}
+            </div>
+            <div class="chain secondary">
+              <!-- <div class="fade"><div class="link"></div></div> -->
+              ${items.second}
+            </div>
+          </div>
+        </div>
+      </section>
+      <label><span>${state.second.name}</span></label>
+    </div>
   `
 }
 

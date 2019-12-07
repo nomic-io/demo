@@ -38,7 +38,6 @@ body {
 }
 
 section {
-  padding: 30px 40px;
 }
 
 .logo {
@@ -49,504 +48,521 @@ section {
   margin-right: auto;
 }
 
-section.chains {
-  background: @background;
-
-  .chain {
+.chain-container {
+  > label {
+    display: block;
+    color: #aaa;
+    text-transform: uppercase;
     position: relative;
-    width: max-content;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    width: 80%;
     margin-left: auto;
     margin-right: auto;
-    line-height: 0;
+    text-align: center;
+    font-size: 0.8em;
+    line-height: 1em;
+    z-index: 1;
 
-    > label {
-      display: block;
-      color: #aaa;
-      text-transform: uppercase;
-      position: relative;
-      margin-top: 20px;
-      margin-bottom: 20px;
-      width: 100%;
-      text-align: center;
-      font-size: 0.8em;
-      line-height: 1em;
-      z-index: 1;
-
-      span {
-        display: inline-block;
-        background: @background;
-        padding: 0 8px;
-      }
-    }
-    > label:after {
-      content: '';
-      display: block;
-      border-top: 1px solid #ddd;
-      width: 100%;
-      position: relative;
-      bottom: 0.5em;
-      z-index: -2;
-    }
-
-    .block {
+    span {
       display: inline-block;
-      background: @block-color;
-      border: @block-border-width solid black;
-      position: relative;
-
-      width: @block-width;
-      height: @block-height;
-
-      border-radius: @block-radius;
-      z-index: 1;
-
-      // box-shadow: 3px 3px 3px rgba(0,0,0,0.2);
-
-      .content {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        // text-align: center;
-        padding: 8px 12px;
-        color: #777;
-        font-size: 1em;
-        line-height: 1em;
-
-        label {
-          text-transform: uppercase;
-          font-size: 0.72em;
-          font-weight: bold;
-          color: #444;
-          margin-right: 4px;
-        }
-
-        .hash {
-          font-family: monospace;
-          color: #aaa;
-        }
-
-        .txs {
-          color: #aaa;
-          font-size: 0.8em;
-        }
-
-        .ago {
-          font-size: 0.8em;
-          color: #bbb;
-          float: right;
-          position: relative;
-          // top: 11px;
-          // right: 2px;
-        }
-
-        .separator {
-          margin-left: 6px;
-          border-left: 1px solid #ddd;
-          margin-right: 6px;
-        }
-
-        .icon {
-          float: left;
-          position: relative;
-          top: -4px;
-          left: -5px;
-          width: 24px;
-          height: 24px;
-        }
-
-        .stack-count {
-          display: none;
-          float: right;
-          font-size: 0.9em;
-          border-radius: 4px;
-          line-height: 0.9em;
-          padding: 2px 4px;
-          border: 1px solid #ddd;
-          position: relative;
-          top: 9px;
-        }
-      }
+      background: @background;
+      padding: 0 8px;
     }
+  }
+  > label:after {
+    content: '';
+    display: block;
+    border-top: 1px solid #ddd;
+    width: 100%;
+    position: relative;
+    bottom: 0.5em;
+    z-index: -2;
+  }
+}
 
-    .block.mining {
-      border: none;
-      background: none;
-      width: @block-width + @block-border-width * 2;
-      height: @block-height + @block-border-width * 2;
-      text-align: center;
+section.chains {
+  overflow-x: scroll;
+  position: relative;
+  width: 100vw;
+  direction: rtl;
+  scrollbar-color: none;
+  scrollbar-base-color: none;
 
-      svg path {
-        stroke-dasharray: 8.21;
-        animation: dash 600s linear infinite;
+  .inner {
+    width: max-content;
+    direction: ltr;
+    padding-right: 40px;
 
-        @keyframes dash {
-          to {
-            stroke-dashoffset: 10000;
+      .inner2 {
+
+      .chain {
+        text-align: left;
+        position: relative;
+        width: max-content;
+        line-height: 0;
+
+        .block {
+          display: inline-block;
+          background: @block-color;
+          border: @block-border-width solid black;
+          position: relative;
+
+          width: @block-width;
+          height: @block-height;
+
+          border-radius: @block-radius;
+          z-index: 1;
+
+          // box-shadow: 3px 3px 3px rgba(0,0,0,0.2);
+
+          .content {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            // text-align: center;
+            padding: 8px 12px;
+            color: #777;
+            font-size: 1em;
+            line-height: 1em;
+
+            label {
+              text-transform: uppercase;
+              font-size: 0.72em;
+              font-weight: bold;
+              color: #444;
+              margin-right: 4px;
+            }
+
+            .hash {
+              font-family: monospace;
+              color: #aaa;
+            }
+
+            .txs {
+              color: #aaa;
+              font-size: 0.8em;
+            }
+
+            .ago {
+              font-size: 0.8em;
+              color: #bbb;
+              float: right;
+              position: relative;
+              // top: 11px;
+              // right: 2px;
+            }
+
+            .separator {
+              margin-left: 6px;
+              border-left: 1px solid #ddd;
+              margin-right: 6px;
+            }
+
+            .icon {
+              float: left;
+              position: relative;
+              top: -4px;
+              left: -5px;
+              width: 24px;
+              height: 24px;
+            }
+
+            .stack-count {
+              display: none;
+              float: right;
+              font-size: 0.9em;
+              border-radius: 4px;
+              line-height: 0.9em;
+              padding: 2px 4px;
+              border: 1px solid #ddd;
+              position: relative;
+              top: 9px;
+            }
           }
         }
-      }
 
-      .content {
-        margin-top: @block-border-width;
-        margin-bottom: @block-border-width;
-        margin-left: @block-border-width;
-        margin-right: @block-border-width;
-        color: #bbb;
+        .block.mining {
+          border: none;
+          background: none;
+          width: @block-width + @block-border-width * 2;
+          height: @block-height + @block-border-width * 2;
+          text-align: center;
 
-        span.mining {
-          text-transform: uppercase;
+          svg path {
+            stroke-dasharray: 8.21;
+            animation: dash 600s linear infinite;
+
+            @keyframes dash {
+              to {
+                stroke-dashoffset: 10000;
+              }
+            }
+          }
+
+          .content {
+            margin-top: @block-border-width;
+            margin-bottom: @block-border-width;
+            margin-left: @block-border-width;
+            margin-right: @block-border-width;
+            color: #bbb;
+
+            span.mining {
+              text-transform: uppercase;
+              position: relative;
+              top: 14px;
+              font-size: 0.85em;
+            }
+          }
+        }
+        .block.drop {
           position: relative;
-          top: 14px;
-          font-size: 0.85em;
-        }
-      }
-    }
-    .block.drop {
-      position: relative;
-      z-index: 5;
-      animation: drop 1.2s ease-in forwards;
+          z-index: 5;
+          animation: drop 1.2s ease-in forwards;
 
-      @keyframes drop {
-        0% {
-          top: -@drop-distance;
+          @keyframes drop {
+            0% {
+              top: -@drop-distance;
+              opacity: 0;
+              box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.1);
+              animation-timing-function: ease-in;
+              border-color: #ddd;
+            }
+            12% {
+              top: -@drop-distance; 
+              opacity: 1;
+              box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.15);
+              animation-timing-function: cubic-bezier(0.05,0,0.9,0);
+              border-color: #ddd;
+            }
+            44% {
+              top: 0;
+              opacity: 1;
+              box-shadow: 0 0 1px rgba(0,0,0,0.25);
+              border-color: #ddd;
+            }
+            44.01% {
+              box-shadow: 0 0 0 rgba(0,0,0,0.5);
+              border-color: inherit;
+            }
+            50% {
+              box-shadow:
+                0 0 0 (@drop-glow-start - @block-border-width - 1) @background,
+                0 0 0 @drop-glow-start rgba(@link-color-1, 0.4);
+              z-index: 0;
+            }
+            100% {
+              box-shadow:
+                0 0 0 (@drop-glow-end - @block-border-width - 1) @background,
+                0 0 0 @drop-glow-end rgba(@link-color-1, 0);
+              z-index: 0;
+              animation-timing-function: cubic-bezier(0,.67,0,1);
+            }
+          }
+        }
+
+        .block.folding {
+          position: relative;
+          animation: fold 0.3s ease-in-out forwards;
+          z-index: 5 !important;
+
+          @keyframes fold {
+            0% {
+              left: 0;
+            }
+            100% {
+              left: -@block-width - @block-gap + @stack3-offset / 2;
+            }
+          }
+        }
+
+        .link.folding {
+          position: relative;
+          animation: link-fold 0.6s ease-in-out forwards;
           opacity: 0;
-          box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.1);
-          animation-timing-function: ease-in;
-          border-color: #ddd;
+          @keyframes link-fold {
+            0% {
+              left: 0;
+              opacity: 1;
+            }
+            100% {
+              left: -@block-width - @block-gap + @stack3-offset / 2;
+              opacity: 0;
+            }
+          }
         }
-        12% {
-          top: -@drop-distance; 
-          opacity: 1;
-          box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.15);
-          animation-timing-function: cubic-bezier(0.05,0,0.9,0);
-          border-color: #ddd;
+
+        .link.fade,
+        .block.fade {
+          opacity: 0 !important;
+          animation: fade 1s linear forwards;
+
+          @keyframes fade {
+            0% {
+              opacity: 0;
+            }
+            100% {
+              opacity: 1;
+            }
+          }
         }
-        44% {
-          top: 0;
-          opacity: 1;
-          box-shadow: 0 0 1px rgba(0,0,0,0.25);
-          border-color: #ddd;
+
+        .block.stack2 {
+          position: relative;
+          left: @stack2-offset;
+          z-index: 1;
         }
-        44.01% {
-          box-shadow: 0 0 0 rgba(0,0,0,0.5);
-          border-color: inherit;
+        .block.stack3 {
+          position: relative;
+          left: @stack3-offset;
+          z-index: 1;
         }
-        50% {
-          box-shadow:
-            0 0 0 (@drop-glow-start - @block-border-width - 1) @background,
-            0 0 0 @drop-glow-start rgba(@link-color-1, 0.4);
-          z-index: 0;
+        .block.stack2:after,
+        .block.stack3:after {
+          content: '';
+          position: absolute;
+          left: -3px - @block-border-width * 2;
+          top: @block-height * (1 - @block-stack-shrink) / 2 - @block-border-width;
+          background: @block-color;
+          width: 3px;
+          height: @block-height * @block-stack-shrink;
+          z-index: -1;
+          border-radius: @block-radius 0 0 @block-radius;
+          border: @block-border-width solid black;
+          border-right-width: 2px;
         }
-        100% {
-          box-shadow:
-            0 0 0 (@drop-glow-end - @block-border-width - 1) @background,
-            0 0 0 @drop-glow-end rgba(@link-color-1, 0);
-          z-index: 0;
-          animation-timing-function: cubic-bezier(0,.67,0,1);
+        .block.stack3:before {
+          content: '';
+          position: absolute;
+          left: -9px - @block-border-width * 2;
+          top: @block-height * (1 - @block-stack-shrink * @block-stack-shrink) / 2 - @block-border-width;
+          background: @block-color;
+          width: 9px;
+          height: @block-height * @block-stack-shrink * @block-stack-shrink;
+          z-index: -2;
+          border-radius: @block-radius 0 0 @block-radius;
+          border: @block-border-width solid black;
+          border-right-width: 2px;
+        }
+
+        .link {
+          display: inline-block;
+          position: relative;
+          top: -(@block-height / 2) - (@link-width / 2);
+          height: @link-width;
+          width: @block-gap;
+          background: @link-color-3;
+        }
+
+        .link:after {
+          content: '';
+          display: block;
+          position: absolute;
+          top: -(@link-dot-size / 2) + (@link-width / 2);
+          border-radius: 100px;
+          height: @link-dot-size;
+          width: @link-dot-size;
+          background: @link-color-1;
+          z-index: 3;
+          right: -(@link-dot-size / 2) - (@block-border-width / 2);
+        }
+
+        .link.skip {
+          width: @block-gap + @block-width + @block-border-width * 2;
+        }
+        .link.skip:after {
+          content: none;
+        }
+
+        // .fade {
+        //   display: inline-block;
+        //   position: relative;
+        //   height: 100%;
+        //   top: -@link-width;
+          
+        //   > .link {
+        //     position: absolute;
+        //     left: -@block-gap;
+        //     background: none;
+        //     background-image: linear-gradient(
+        //       to left,
+        //       @link-color-1 0%,
+        //       rgba(0,0,0,0) 100%
+        //     );
+        //   }
+        // }
+      }
+      .chain:first-child {
+        .block,
+        .block.stack2:after,
+        .block.stack2:before,
+        .block.stack3:after,
+        .block.stack3:before {
+          border-color: @link-color-1;
+        }
+        .block.mining {
+          box-shadow: inherit;
+        }
+
+        .block > .content > .icon {
+          background: url(./btc.png);
+          background-size: 20px 20px;
+          width: 20px;
+          height: 20px;
         }
       }
-    }
-
-    .block.folding {
-      position: relative;
-      animation: fold 0.3s ease-in-out forwards;
-      z-index: 5 !important;
-
-      @keyframes fold {
-        0% {
-          left: 0;
+      .chain:last-child {
+        .link {
+          // background: @link-color-2;
         }
-        100% {
-          left: -@block-width - @block-gap + @stack3-offset / 2;
+        .link:after {
+          // background: @link-color-2;
         }
-      }
-    }
+        .block,
+        .block.stack2:after,
+        .block.stack2:before,
+        .block.stack3:after,
+        .block.stack3:before {
+          border-color: @link-color-2;
+        }
+        .block.mining {
+          box-shadow: inherit;
+        }
 
-    .link.folding {
-      position: relative;
-      animation: link-fold 0.6s ease-in-out forwards;
-      opacity: 0;
-      @keyframes link-fold {
-        0% {
-          left: 0;
-          opacity: 1;
+        .block {
+          > .content > .icon {
+            background: url(./logo2.png);
+            background-size: 20px 20px;
+            width: 20px;
+            height: 20px;
+          }
         }
-        100% {
-          left: -@block-width - @block-gap + @stack3-offset / 2;
-          opacity: 0;
-        }
-      }
-    }
 
-    .link.fade,
-    .block.fade {
-      opacity: 0 !important;
-      animation: fade 1s linear forwards;
-
-      @keyframes fade {
-        0% {
-          opacity: 0;
-        }
-        100% {
-          opacity: 1;
+        .fade > .link {
+          background: none;
+          background-image: linear-gradient(
+            to left,
+            @link-color-2 0%,
+            rgba(0,0,0,0) 100%
+          );
         }
       }
-    }
 
-    .block.stack2 {
-      position: relative;
-      left: @stack2-offset;
-      z-index: 1;
-    }
-    .block.stack3 {
-      position: relative;
-      left: @stack3-offset;
-      z-index: 1;
-    }
-    .block.stack2:after,
-    .block.stack3:after {
-      content: '';
-      position: absolute;
-      left: -3px - @block-border-width * 2;
-      top: @block-height * (1 - @block-stack-shrink) / 2 - @block-border-width;
-      background: @block-color;
-      width: 3px;
-      height: @block-height * @block-stack-shrink;
-      z-index: -1;
-      border-radius: @block-radius 0 0 @block-radius;
-      border: @block-border-width solid black;
-      border-right-width: 2px;
-    }
-    .block.stack3:before {
-      content: '';
-      position: absolute;
-      left: -9px - @block-border-width * 2;
-      top: @block-height * (1 - @block-stack-shrink * @block-stack-shrink) / 2 - @block-border-width;
-      background: @block-color;
-      width: 9px;
-      height: @block-height * @block-stack-shrink * @block-stack-shrink;
-      z-index: -2;
-      border-radius: @block-radius 0 0 @block-radius;
-      border: @block-border-width solid black;
-      border-right-width: 2px;
-    }
+      .interchain {
+        position: relative;
+        width: max-content;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 0;
+        padding: 0;
 
-    .link {
-      display: inline-block;
-      position: relative;
-      top: -(@block-height / 2) - (@link-width / 2);
-      height: @link-width;
-      width: @block-gap;
-      background: @link-color-3;
-    }
+        .block {
+          display: inline-block;
+          width: @block-width + @block-gap + @block-border-width * 2;
+        }
 
-    .link:after {
-      content: '';
-      display: block;
-      position: absolute;
-      top: -(@link-dot-size / 2) + (@link-width / 2);
-      border-radius: 100px;
-      height: @link-dot-size;
-      width: @link-dot-size;
-      background: @link-color-1;
-      z-index: 3;
-      right: -(@link-dot-size / 2) - (@block-border-width / 2);
-    }
-
-    .link.skip {
-      width: @block-gap + @block-width + @block-border-width * 2;
-    }
-    .link.skip:after {
-      content: none;
-    }
-
-    // .fade {
-    //   display: inline-block;
-    //   position: relative;
-    //   height: 100%;
-    //   top: -@link-width;
-      
-    //   > .link {
-    //     position: absolute;
-    //     left: -@block-gap;
-    //     background: none;
-    //     background-image: linear-gradient(
-    //       to left,
-    //       @link-color-1 0%,
-    //       rgba(0,0,0,0) 100%
-    //     );
-    //   }
-    // }
-  }
-  .chain:first-child {
-    .block,
-    .block.stack2:after,
-    .block.stack2:before,
-    .block.stack3:after,
-    .block.stack3:before {
-      border-color: @link-color-1;
-    }
-    .block.mining {
-      box-shadow: inherit;
-    }
-
-    .block > .content > .icon {
-      background: url(./btc.png);
-      background-size: 20px 20px;
-      width: 20px;
-      height: 20px;
-    }
-  }
-  .chain:last-child {
-    .link {
-      // background: @link-color-2;
-    }
-    .link:after {
-      // background: @link-color-2;
-    }
-    .block,
-    .block.stack2:after,
-    .block.stack2:before,
-    .block.stack3:after,
-    .block.stack3:before {
-      border-color: @link-color-2;
-    }
-    .block.mining {
-      box-shadow: inherit;
-    }
-
-    .block {
-      > .content > .icon {
-        background: url(./logo2.png);
-        background-size: 20px 20px;
-        width: 20px;
-        height: 20px;
+        .link {
+          display: inline-block;
+          position: relative;
+          width: @link-width;
+          height: @interchain-gap;
+          border-left: @link-width solid @link-color-3;
+          margin-left: (@block-width + @block-border-width) / 2 + (@block-gap) - @link-width / 2;
+          margin-right: (@block-width + @block-border-width) / 2 - @link-width / 2;
+        }
+        .link:after {
+          content: '';
+          display: block;
+          position: absolute;
+          border-radius: 100px;
+          height: @link-dot-size;
+          width: @link-dot-size;
+          background: @link-color-3;
+          z-index: 10;
+          left: -(@link-dot-size / 2) - (@link-width / 2);
+          bottom: -(@link-dot-size / 2) - (@block-border-width / 2);
+        }
+        .link:before {
+          content: '';
+          display: block;
+          position: absolute;
+          border-radius: 100px;
+          height: @link-dot-size;
+          width: @link-dot-size;
+          background: @link-color-3;
+          z-index: 10;
+          left: -(@link-dot-size / 2) - (@link-width / 2);
+          top: -(@link-dot-size / 2) - (@block-border-width / 2);
+        }
       }
-    }
 
-    .fade > .link {
-      background: none;
-      background-image: linear-gradient(
-        to left,
-        @link-color-2 0%,
-        rgba(0,0,0,0) 100%
-      );
-    }
-  }
+      .link.mining {
+        background: none !important;
+        background-image: linear-gradient(
+          to right,
+          #ddd 50%,
+          rgba(0,0,0,0) 50%
+        ) !important;
+        background-size: 16px 8px !important;
+      }
+      .link.mining:after {
+        background: #bbb !important;
+      }
 
-  .interchain {
-    position: relative;
-    width: max-content;
-    margin-left: auto;
-    margin-right: auto;
-    line-height: 0;
-    padding: 0;
+      .chain .block.mining span.mining:before {
+        content: 'Mining';
+      }
+      .chain.secondary .block.mining span.mining:before {
+        content: 'Validating';
+      }
 
-    .block {
-      display: inline-block;
-      width: @block-width + @block-gap + @block-border-width * 2;
-    }
+      .chain.secondary {
+        .block.drop {
+          position: relative;
+          z-index: 5;
+          animation: drop-secondary 1.2s ease-in forwards;
 
-    .link {
-      display: inline-block;
-      position: relative;
-      width: @link-width;
-      height: @interchain-gap;
-      border-left: @link-width solid @link-color-3;
-      margin-left: (@block-width + @block-border-width) / 2 + (@block-gap) - @link-width / 2;
-      margin-right: (@block-width + @block-border-width) / 2 - @link-width / 2;
-    }
-    .link:after {
-      content: '';
-      display: block;
-      position: absolute;
-      border-radius: 100px;
-      height: @link-dot-size;
-      width: @link-dot-size;
-      background: @link-color-3;
-      z-index: 10;
-      left: -(@link-dot-size / 2) - (@link-width / 2);
-      bottom: -(@link-dot-size / 2) - (@block-border-width / 2);
-    }
-    .link:before {
-      content: '';
-      display: block;
-      position: absolute;
-      border-radius: 100px;
-      height: @link-dot-size;
-      width: @link-dot-size;
-      background: @link-color-3;
-      z-index: 10;
-      left: -(@link-dot-size / 2) - (@link-width / 2);
-      top: -(@link-dot-size / 2) - (@block-border-width / 2);
-    }
-  }
-
-  .link.mining {
-    background: none !important;
-    background-image: linear-gradient(
-      to right,
-      #ddd 50%,
-      rgba(0,0,0,0) 50%
-    ) !important;
-    background-size: 16px 8px !important;
-  }
-  .link.mining:after {
-    background: #bbb !important;
-  }
-
-  .chain .block.mining span.mining:before {
-    content: 'Mining';
-  }
-  .chain.secondary .block.mining span.mining:before {
-    content: 'Validating';
-  }
-
-  .chain.secondary {
-    .block.drop {
-      position: relative;
-      z-index: 5;
-      animation: drop-secondary 1.2s ease-in forwards;
-
-      @keyframes drop-secondary {
-        0% {
-          top: -@drop-distance;
-          opacity: 0;
-          box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.1);
-          animation-timing-function: ease-in;
-          border-color: #ddd;
-        }
-        12% {
-          top: -@drop-distance; 
-          opacity: 1;
-          box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.15);
-          animation-timing-function: cubic-bezier(0.05,0,0.9,0);
-          border-color: #ddd;
-        }
-        44% {
-          top: 0;
-          opacity: 1;
-          box-shadow: 0 0 1px rgba(0,0,0,0.25);
-          border-color: #ddd;
-        }
-        44.01% {
-          box-shadow: 0 0 0 rgba(255,0,0,0.5);
-          border-color: inherit;
-        }
-        50% {
-          box-shadow:
-            0 0 0 (@drop-glow-start - @block-border-width - 1) @background,
-            0 0 0 @drop-glow-start rgba(@link-color-2, 0.4);
-          z-index: 0;
-        }
-        100% {
-          box-shadow:
-            0 0 0 (@drop-glow-end - @block-border-width - 1) @background,
-            0 0 0 @drop-glow-end rgba(@link-color-2, 0);
-          z-index: 0;
-          animation-timing-function: cubic-bezier(0,.67,0,1);
+          @keyframes drop-secondary {
+            0% {
+              top: -@drop-distance;
+              opacity: 0;
+              box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.1);
+              animation-timing-function: ease-in;
+              border-color: #ddd;
+            }
+            12% {
+              top: -@drop-distance; 
+              opacity: 1;
+              box-shadow: 0 @drop-distance 20px rgba(0,0,0,0.15);
+              animation-timing-function: cubic-bezier(0.05,0,0.9,0);
+              border-color: #ddd;
+            }
+            44% {
+              top: 0;
+              opacity: 1;
+              box-shadow: 0 0 1px rgba(0,0,0,0.25);
+              border-color: #ddd;
+            }
+            44.01% {
+              box-shadow: 0 0 0 rgba(255,0,0,0.5);
+              border-color: inherit;
+            }
+            50% {
+              box-shadow:
+                0 0 0 (@drop-glow-start - @block-border-width - 1) @background,
+                0 0 0 @drop-glow-start rgba(@link-color-2, 0.4);
+              z-index: 0;
+            }
+            100% {
+              box-shadow:
+                0 0 0 (@drop-glow-end - @block-border-width - 1) @background,
+                0 0 0 @drop-glow-end rgba(@link-color-2, 0);
+              z-index: 0;
+              animation-timing-function: cubic-bezier(0,.67,0,1);
+            }
+          }
         }
       }
     }
