@@ -399,7 +399,7 @@ function chainStore (state, emitter) {
   //   )
   // }, 5000)
 
-  let ws = new WebSocket('ws://178.128.184.17:8088')
+  let ws = new WebSocket(`ws://${window.location.hostname}:8080`)
   ws.onmessage = function ({ data }) {
     data = JSON.parse(data)
     console.log('<<', data)
