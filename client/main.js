@@ -44,6 +44,7 @@ function chainView (state, emit) {
     inter: [],
     second: []
   }
+  
 
   console.log('chains', state.first.blocks, state.second.blocks)
 
@@ -137,13 +138,17 @@ function blockView (b, emit) {
           <br>
           <span class="hash">${truncateHash(b.hash)}</span>
           <br>
-          <span class="ago">${timeago(b.time, 'en_short')}</span>
           <br>
           <!-- <span>
             <label>Foo</label>
             <span>Bar</span><span class="separator"></span><label>Foo</label>
             <span>Bar</span>
           </span> -->
+
+          <br>
+          <span class="ago">${timeago(b.time, 'en_short')}</span>
+          <span class="icon"></span>
+
           ${b.stack ? 
             html`
               <span class="stack-count">
@@ -156,8 +161,8 @@ function blockView (b, emit) {
     `
   } else {
     let r = 8
-    let w = 90 - r - 3 * 2
-    let h = 70 - r - 3 * 2
+    let w = 110 - r - 3 * 2
+    let h = 80 - r - 3 * 2
 
     let path = `
       m${r+1},2
@@ -261,9 +266,13 @@ function chainStore (state, emitter) {
     second: []
   }
 
+
+  let lastLink = null
+
   let initialized = false
-  // function init () {
+  function init () {
     initialized = false
+    lastLink = null
     queues = {
       first: [],
       second: []
@@ -288,7 +297,7 @@ function chainStore (state, emitter) {
         ]
       }
     }
-  // }
+  }
 
   function push (chain) {
     return function (block) {
@@ -351,18 +360,18 @@ function chainStore (state, emitter) {
   emitter.on('fold-second', fold('second'))
 
   emitter.on('shift', function () {
-    // while (state.chains.second.blocks.length > 6
-    //   || state.chains.second.blocks[0].link == null) {
-    //   let shifted = state.chains.second.blocks.shift()
-    //   if (shifted.link != null) {
-    //     while (state.chains.first.blocks[0].height <= shifted.link) {
-    //       state.chains.first.blocks.shift()
-    //     }
-    //   }
-    //   if (state.chains.second.blocks.length > 0) {
-    //     delete state.chains.second.blocks[0].stack
-    //   }
-    // }
+    while (state.chains.second.blocks.length > 5
+      || state.chains.second.blocks[0].link == null) {
+      let shifted = state.chains.second.blocks.shift()
+      if (shifted.link != null) {
+        while (state.chains.first.blocks[0].height <= shifted.link) {
+          state.chains.first.blocks.shift()
+        }
+      }
+      if (state.chains.second.blocks.length > 0) {
+        delete state.chains.second.blocks[0].stack
+      }
+    }
   })
 
   // setTimeout(() => {
@@ -380,8 +389,6 @@ function chainStore (state, emitter) {
   //     5000
   //   )
   // }, 5000)
-
-  let lastLink = null
 
   let ws = new WebSocket('ws://localhost:8080')
   ws.onmessage = function ({ data }) {
@@ -428,6 +435,16 @@ function chainStore (state, emitter) {
         }
         if (queues.second.length > 0) {
           let last = queues.second[queues.second.length - 1]
+
+          if (last.hasHeaderTx) {
+            if (lastLink == null) {
+              block.link = state.chains.first.blocks[0].height
+            } else {
+              block.link = lastLink + 1
+            }
+            lastLink = block.link
+          }
+
           queues.second = []
           emitter.emit('push-second', formatTmBlock(last))
           return
@@ -463,6 +480,6 @@ function chainStore (state, emitter) {
     }
   }
 
-  // init()
-  // window.addEventListener('focus', init)
+  init()
+  window.addEventListener('focus', () => window.location = window.location)
 }

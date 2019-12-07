@@ -33,7 +33,7 @@ fn main() {
 
     server.start(broadcaster);
     
-    websocket.listen("localhost:8080").unwrap();
+    websocket.listen("0.0.0.0:8080").unwrap();
 }
 
 struct NullHandler;
