@@ -6,7 +6,7 @@ let timeago = require('timeago.js').format
 
 require('timeago.js').register('en_short', function (number, index) {
   return [
-    ['1s ago', 'right now'],
+    ['%ss ago', 'in %ss'],
     ['%ss ago', 'in %ss'],
     ['1m ago', 'in 1m'],
     ['%sm ago', 'in %sm'],
@@ -132,12 +132,13 @@ function blockView (b, emit) {
   let el
   if (!b.mining) {
     el = html`
-      <div class="block ${`stack${Math.min(3, b.stack)}`} ${b.drop ? 'drop' : ''} ${b.fold ? 'fold' : ''}">
+      <div class="block ${`stack${Math.min(3, b.stack)}`} ${b.drop ? 'drop' : ''} ${b.fold ? 'fold' : ''}" time=${b.time.getTime()}>
         <div class="content">
           <span>#${b.height.toLocaleString()}</span>
           <br>
           <span class="hash">${truncateHash(b.hash)}</span>
           <br>
+          <span class="txs">${b.txs} txs</span>
           <br>
           <!-- <span>
             <label>Foo</label>
@@ -161,8 +162,8 @@ function blockView (b, emit) {
     `
   } else {
     let r = 8
-    let w = 110 - r - 3 * 2
-    let h = 80 - r - 3 * 2
+    let w = 126 - r - 3 * 2
+    let h = 94 - r - 3 * 2
 
     let path = `
       m${r+1},2
@@ -266,6 +267,7 @@ function chainStore (state, emitter) {
     second: []
   }
 
+  let gotNewBtc = false
 
   let lastLink = null
 
@@ -360,8 +362,9 @@ function chainStore (state, emitter) {
   emitter.on('fold-second', fold('second'))
 
   emitter.on('shift', function () {
-    while (state.chains.second.blocks.length > 5
-      || state.chains.second.blocks[0].link == null) {
+    while (state.chains.second.blocks.length > 10
+      // || state.chains.second.blocks[0].link == null) {
+    ) {
       let shifted = state.chains.second.blocks.shift()
       if (shifted.link != null) {
         while (state.chains.first.blocks[0].height <= shifted.link) {
@@ -390,7 +393,7 @@ function chainStore (state, emitter) {
   //   )
   // }, 5000)
 
-  let ws = new WebSocket('ws://localhost:8080')
+  let ws = new WebSocket('ws://178.128.184.17:8088')
   ws.onmessage = function ({ data }) {
     data = JSON.parse(data)
     console.log('<<', data)
@@ -430,13 +433,15 @@ function chainStore (state, emitter) {
         if (queues.first.length > 0) {
           let last = queues.first[queues.first.length - 1]
           queues.first = []
+          gotNewBtc = true
           emitter.emit('push-first', formatBtcBlock(last))
           return
         }
         if (queues.second.length > 0) {
           let last = queues.second[queues.second.length - 1]
+          let block = formatTmBlock(last)
 
-          if (last.hasHeaderTx) {
+          if (block.hasHeaderTx) {
             if (lastLink == null) {
               block.link = state.chains.first.blocks[0].height
             } else {
@@ -446,7 +451,7 @@ function chainStore (state, emitter) {
           }
 
           queues.second = []
-          emitter.emit('push-second', formatTmBlock(last))
+          emitter.emit('push-second', block)
           return
         }
       }, 2000)
@@ -461,8 +466,9 @@ function chainStore (state, emitter) {
   function formatBtcBlock (block) {
     return {
       height: block.height,
-      hash: block.hash,
-      time: new Date(block.time * 1000)
+      hash: block.hash.toUpperCase(),
+      time: new Date(block.time * 1000),
+      txs: block.nTx
     }
   }
 
@@ -476,10 +482,23 @@ function chainStore (state, emitter) {
       height: Number(block.header.height),
       hash: block.header.last_commit_hash, // :P
       time: new Date(block.header.time),
+      txs: block.header.num_txs,
       hasHeaderTx
     }
   }
 
   init()
-  window.addEventListener('focus', () => window.location = window.location)
+  // window.addEventListener('focus', () => window.location = window.location)
 }
+
+setInterval(() => {
+  let blocks = document.querySelectorAll('.block')
+
+  for (let block of blocks) {
+    let time = block.getAttribute('time')
+    if (!time) continue
+
+    let ago = block.querySelector('.ago')
+    ago.innerText = timeago(Number(time), 'en_short')
+  }
+}, 1000)

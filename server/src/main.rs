@@ -14,7 +14,7 @@ use failure::{bail, Error};
 type Result<T> = std::result::Result<T, Error>;
 
 fn main() {
-    let server = Server::new("localhost:18332", "kep.io:26657").unwrap();
+    let server = Server::new("localhost:18332", "localhost:26657").unwrap();
 
     let mut settings: ws::Settings = Default::default();
     settings.out_buffer_capacity = 1024 * 128;
@@ -78,34 +78,36 @@ impl Server {
         let bitcoin_rpc = connect_btc_rpc(btc_addr)?;
         let tendermint_rpc = connect_tm_rpc(tm_addr)?;
 
-        eprint!("fetching initial block state...");
-        std::io::stderr().flush()?;
-        let tendermint_blocks = get_initial_tm_blocks(&tendermint_rpc)?;
-        eprintln!(" done");
-
         Ok(Server {
             bitcoin_rpc,
             tendermint_rpc,
             bitcoin_blocks: Default::default(),
-            tendermint_blocks: Arc::new(Mutex::new(tendermint_blocks))
+            tendermint_blocks: Default::default()
         })
     }
 
     pub fn start(mut self, broadcaster: ws::Sender) {
-        std::thread::spawn(move || loop {
-            let btc_blocks = self.get_new_btc_blocks().unwrap();
-            let tm_blocks = self.get_new_tm_blocks().unwrap();
+        std::thread::spawn(move || {
+            eprint!("fetching initial blocks...");
+            std::io::stderr().flush().unwrap();
+            self.get_new_tm_blocks(500).unwrap();
+            eprintln!("done");
 
-            if !btc_blocks.is_empty() || !tm_blocks.is_empty() {
-                let update = Update {
-                    bitcoin: btc_blocks,
-                    tendermint: tm_blocks
-                };
-                let message = serde_json::to_string(&update).unwrap();
-                broadcaster.send(format!("{}\n", message)).unwrap();
+            loop {
+                let btc_blocks = self.get_new_btc_blocks().unwrap();
+                let tm_blocks = self.get_new_tm_blocks(5).unwrap();
+
+                if !btc_blocks.is_empty() || !tm_blocks.is_empty() {
+                    let update = Update {
+                        bitcoin: btc_blocks,
+                        tendermint: tm_blocks
+                    };
+                    let message = serde_json::to_string(&update).unwrap();
+                    broadcaster.send(format!("{}\n", message)).unwrap();
+                }
+
+                std::thread::sleep_ms(1000);
             }
-
-            std::thread::sleep_ms(1000);
         });
     }
 
@@ -152,34 +154,33 @@ impl Server {
         }
     }
 
-    fn get_new_tm_blocks(&mut self) -> Result<Vec<tendermint::block::Block>> {
+    fn get_new_tm_blocks(&mut self, max_scan: u64) -> Result<Vec<tendermint::block::Block>> {
         let height = self.tendermint_rpc.status()?
             .sync_info.latest_block_height.value();
         
         let mut blocks = vec![];
         let start_height = max(
             self.tm_height(),
-            max(height, 5) - 5
+            max(height, max_scan) - max_scan
         ) + 1;
 
         let mut tendermint_blocks = self.tendermint_blocks.lock().unwrap();
 
         for h in start_height..=height {
             let res = self.tendermint_rpc.block(h)?;
+            let prev = tendermint_blocks.back();
 
-            let populated = has_header_tx(&res.block);
-            let after_populated = has_header_tx(tendermint_blocks.back().unwrap());
-
-            // replace last
-            if !populated && !after_populated {
-                if !blocks.is_empty() {
-                    blocks.pop();
+            if let Some(prev) = prev {
+                if !has_header_tx(prev) && !has_header_tx(&res.block) {
+                    if !blocks.is_empty() {
+                        blocks.pop();
+                    }
+                    tendermint_blocks.pop_back();
                 }
-                tendermint_blocks.pop_back();
             }
-
             blocks.push(res.block.clone());
-            tendermint_blocks.push_back(res.block);
+            tendermint_blocks.push_back(res.block.clone());
+
             while tendermint_blocks.len() > 6 {
                 tendermint_blocks.pop_front();
             }
@@ -205,32 +206,32 @@ fn connect_tm_rpc(address: &str) -> Result<tm_rpc::Client> {
     Ok(tm_rpc::Client::new(&address)?)
 }
 
-fn get_initial_tm_blocks(
-    rpc: &tm_rpc::Client
-) -> Result<VecDeque<tendermint::block::Block>> {
-    let height = rpc.status()?.sync_info.latest_block_height;
+// fn get_initial_tm_blocks(
+//     rpc: &tm_rpc::Client
+// ) -> Result<VecDeque<tendermint::block::Block>> {
+//     let height = rpc.status()?.sync_info.latest_block_height;
 
-    let mut blocks: VecDeque<tendermint::block::Block> = Default::default();
+//     let mut blocks: VecDeque<tendermint::block::Block> = Default::default();
 
-    for i in 0..500 {
-        if i == height.value() {
-            break;
-        }
+//     for i in 0..500 {
+//         if i == height.value() {
+//             break;
+//         }
 
-        let block = rpc.block(height.value() - i)?.block;
+//         let block = rpc.block(height.value() - i)?.block;
 
-        let before_populated = match blocks.back() {
-            None => true,
-            Some(prev) => prev.header.height.value() + 1 == block.header.height.value()
-        };
+//         let before_populated = match blocks.back() {
+//             None => true,
+//             Some(prev) => prev.header.height.value() + 1 == block.header.height.value()
+//         };
 
-        if has_header_tx(&block) || before_populated {
-            blocks.push_back(block);
-        }
-    }
+//         if has_header_tx(&block) || before_populated {
+//             blocks.push_back(block);
+//         }
+//     }
 
-    Ok(blocks)
-}
+//     Ok(blocks)
+// }
 
 fn has_header_tx(block: &tendermint::block::Block) -> bool {
     for tx in block.data.iter() {

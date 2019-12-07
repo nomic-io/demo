@@ -127,6 +127,11 @@ section.chains {
           color: #aaa;
         }
 
+        .txs {
+          color: #aaa;
+          font-size: 0.8em;
+        }
+
         .ago {
           font-size: 0.8em;
           color: #bbb;
@@ -170,6 +175,7 @@ section.chains {
       background: none;
       width: @block-width + @block-border-width * 2;
       height: @block-height + @block-border-width * 2;
+      text-align: center;
 
       svg path {
         stroke-dasharray: 8.21;
@@ -192,7 +198,7 @@ section.chains {
         span.mining {
           text-transform: uppercase;
           position: relative;
-          top: 6px;
+          top: 14px;
           font-size: 0.85em;
         }
       }
@@ -299,8 +305,8 @@ section.chains {
       left: @stack3-offset;
       z-index: 1;
     }
-    .block.stack2:before,
-    .block.stack3:before {
+    .block.stack2:after,
+    .block.stack3:after {
       content: '';
       position: absolute;
       left: -3px - @block-border-width * 2;
@@ -313,7 +319,7 @@ section.chains {
       border: @block-border-width solid black;
       border-right-width: 2px;
     }
-    .block.stack3:after {
+    .block.stack3:before {
       content: '';
       position: absolute;
       left: -9px - @block-border-width * 2;
@@ -382,6 +388,9 @@ section.chains {
     .block.stack3:before {
       border-color: @link-color-1;
     }
+    .block.mining {
+      box-shadow: inherit;
+    }
 
     .block > .content > .icon {
       background: url(./btc.png);
@@ -403,6 +412,9 @@ section.chains {
     .block.stack3:after,
     .block.stack3:before {
       border-color: @link-color-2;
+    }
+    .block.mining {
+      box-shadow: inherit;
     }
 
     .block {
