@@ -3,6 +3,7 @@ let devtools = require('choo-devtools')
 let choo = require('choo')
 let logo = require('./logo.png')
 let timeago = require('timeago.js').format
+let createHash = require('create-hash')
 
 require('timeago.js').register('en_short', function (number, index) {
   return [
@@ -34,7 +35,47 @@ function mainView (state, emit) {
     <body>
       <img class="logo" src=${logo} />
       ${chainView(state.chains, emit)}
+      ${txView(state.chains, emit)}
     </body>
+  `
+}
+
+function txView (state, emit) {
+  let txs = []
+  outer: for (let block of state.second.blocks) {
+    if (block.txs == null) continue
+    for (let tx of block.txs) {
+      txs.push(tx)
+      if (txs.length === 25) break outer
+
+      if (tx.type === 'workproof') {
+        tx.content = html`
+          <span>
+            <span class="validator">${tx.data.pubkey}</span>
+            <span class="value">${tx.data.value.toLocaleString()}</span>
+          </span>
+        `
+      } else if (tx.type === 'header') {
+        let plural = tx.data.block_headers.length === 1 ? '' : 's'
+        tx.content = html`<span>${tx.data.block_headers.length} Bitcoin header${plural}</span>`
+      }
+    }
+  }
+
+  console.log(txs)
+
+  return html`
+    <div class="txs">
+      <label>Recent Transactions</label>
+      <ul>
+        ${txs.map((tx) => html`
+          <li time=${tx.time.getTime()} class=${tx.type}>
+            <span class="type">${tx.type}</span>
+            <span class="ago">${timeago(tx.time, 'en_short')}</span>
+            ${tx.content}
+          </li>`)}
+      </ul>
+    </div>
   `
 }
 
@@ -44,9 +85,6 @@ function chainView (state, emit) {
     inter: [],
     second: []
   }
-  
-
-  console.log('chains', state.first.blocks, state.second.blocks)
 
   let block = (b) => blockView(b, emit)
   let linkAndBlock = (b) => b ? [
@@ -144,7 +182,7 @@ function blockView (b, emit) {
           <br>
           <span class="hash">${truncateHash(b.hash)}</span>
           <br>
-          <span class="txs">${b.txs} txs</span>
+          <span class="txs">${b.txCount} txs</span>
           <br>
           <!-- <span>
             <label>Foo</label>
@@ -272,8 +310,6 @@ function chainStore (state, emitter) {
     first: [],
     second: []
   }
-
-  let gotNewBtc = false
 
   let lastLink = null
 
@@ -470,25 +506,46 @@ function chainStore (state, emitter) {
   }
 
   function formatBtcBlock (block) {
+    console.log(block)
+
     return {
       height: block.height,
       hash: block.hash.toUpperCase(),
       time: new Date(block.time * 1000),
-      txs: block.nTx
+      txCount: block.nTx
+    }
+  }
+
+  function formatTmTx (tx) {
+    let type
+    for (let key in tx) {
+      type = key
+      break
+    }
+
+    return {
+      type: type.toLowerCase(),
+      data: tx[type]
     }
   }
 
   function formatTmBlock (block) {
-    let hasHeaderTx = (block.data.txs || []).some((txBase64) => {
-      let txJson = atob(txBase64)
-      return txJson.slice(2, 8) === 'Header'
-    })
+    console.log(block)
+
+    let txs = (block.txs || [])
+      .map(formatTmTx)
+      .map((tx) => {
+        tx.time = new Date(block.time)
+        return tx
+      })
+    let hasHeaderTx = txs.some((tx) => tx.type === 'header')
 
     return {
-      height: Number(block.header.height),
-      hash: block.header.last_commit_hash, // :P
-      time: new Date(block.header.time),
-      txs: block.header.num_txs,
+      height: block.height,
+      hash: block.hash,
+      time: new Date(block.time),
+      txCount: block.txs.length,
+      txs,
       hasHeaderTx
     }
   }
@@ -505,6 +562,16 @@ setInterval(() => {
     if (!time) continue
 
     let ago = block.querySelector('.ago')
+    ago.innerText = timeago(Number(time), 'en_short')
+  }
+
+  let txs = document.querySelectorAll('.txs > ul > li')
+
+  for (let tx of txs) {
+    let time = tx.getAttribute('time')
+    if (!time) continue
+
+    let ago = tx.querySelector('.ago')
     ago.innerText = timeago(Number(time), 'en_short')
   }
 }, 1000)

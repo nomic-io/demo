@@ -10,11 +10,12 @@ use bitcoincore_rpc::{
 use tendermint::rpc as tm_rpc;
 use serde::{Deserialize, Serialize};
 use failure::{bail, Error};
+use sha2::{Digest, Sha256};
 
 type Result<T> = std::result::Result<T, Error>;
 
 fn main() {
-    let server = Server::new("localhost:18332", "localhost:26657").unwrap();
+    let server = Server::new("localhost:18332", "kep.io:26657").unwrap();
 
     let mut settings: ws::Settings = Default::default();
     settings.out_buffer_capacity = 1024 * 128;
@@ -40,8 +41,8 @@ struct NullHandler;
 impl ws::Handler for NullHandler {}
 
 struct WSFactory (
-    Arc<Mutex<VecDeque<btc_json::GetBlockResult>>>,
-    Arc<Mutex<VecDeque<tendermint::block::Block>>>
+    Arc<Mutex<VecDeque<BtcBlock>>>,
+    Arc<Mutex<VecDeque<TmBlock>>>
 );
 impl ws::Factory for WSFactory {
     type Handler = NullHandler;
@@ -60,17 +61,111 @@ impl ws::Factory for WSFactory {
     }
 }
 
+#[derive(Serialize, Clone)]
+enum TmTx {
+    HeaderRelay(Vec<(String, u64)>),
+    WorkProof {
+        value: u64,
+        pubkey: String
+    }
+}
+
+impl From<tendermint::abci::transaction::Transaction> for TmTx {
+    fn from(tx: tendermint::abci::transaction::Transaction) -> Self {
+        let bytes = tx.into_vec();
+        let json: serde_json::Value = serde_json::from_slice(bytes.as_slice()).unwrap();
+        if let serde_json::Value::Object(object) = &json["Header"] {
+            TmTx::HeaderRelay(vec![("".to_string(), 0)])
+        } else if let serde_json::Value::Object(object) = &json["WorkProof"] {
+            let pubkey_arr = object["public_key"].as_array().unwrap();
+            let pubkey_bytes: Vec<u8> = pubkey_arr
+                .into_iter()
+                .map(|byte_value| byte_value.as_u64().unwrap() as u8)
+                .collect();
+
+            let nonce = object["nonce"].as_u64().unwrap();
+            let nonce_bytes = nonce.to_be_bytes();
+
+            let mut hasher = Sha256::new();
+            hasher.input(pubkey_bytes);
+            hasher.input(&nonce_bytes);
+            let hash = hasher.result().to_vec();
+
+            let mut leading_zeros = 0;
+            for byte in hash {
+                leading_zeros += byte.leading_zeros();
+                if byte.leading_zeros() != 8 { break }
+            }
+
+            let mut pubkey = String::new();
+            for byte_value in pubkey_arr {
+                let byte = byte_value.as_u64().unwrap() as u8;
+                pubkey.extend(format!("{:x}", byte).chars());
+            }
+
+            TmTx::WorkProof {
+                value: 1 << leading_zeros,
+                pubkey
+            }
+        } else {
+            panic!("unknown transaction type")
+        }
+    }
+}
+
+#[derive(Serialize, Clone)]
+struct TmBlock {
+    height: u64,
+    hash: tendermint::hash::Hash,
+    time: tendermint::time::Time,
+    txs: Vec<TmTx>
+}
+
+impl From<tm_rpc::endpoint::block::Response> for TmBlock {
+    fn from(block: tm_rpc::endpoint::block::Response) -> Self {
+        let txs = block.block.data.into_vec().into_iter()
+            .map(|tx| tx.into())
+            .collect();
+
+        TmBlock {
+            height: block.block.header.height.value(),
+            hash: block.block_meta.block_id.hash,
+            time: block.block.header.time,
+            txs
+        }
+    }
+}
+
+#[derive(Serialize, Clone)]
+struct BtcBlock {
+    height: u64,
+    hash: String,
+    num_txs: u32,
+    time: u32
+}
+
+impl From<btc_json::GetBlockResult> for BtcBlock {
+    fn from(block: btc_json::GetBlockResult) -> Self {
+        BtcBlock {
+            height: block.height as u64,
+            hash: block.hash.to_string(),
+            num_txs: block.n_tx as u32,
+            time: block.time as u32
+        }
+    }
+}
+
 #[derive(Serialize)]
 struct Update {
-    bitcoin: Vec<btc_json::GetBlockResult>,
-    tendermint: Vec<tendermint::block::Block>
+    bitcoin: Vec<BtcBlock>,
+    tendermint: Vec<TmBlock>
 }
 
 struct Server {
     bitcoin_rpc: btc_rpc::Client,
     tendermint_rpc: tm_rpc::Client,
-    bitcoin_blocks: Arc<Mutex<VecDeque<btc_json::GetBlockResult>>>,
-    tendermint_blocks: Arc<Mutex<VecDeque<tendermint::block::Block>>>
+    bitcoin_blocks: Arc<Mutex<VecDeque<BtcBlock>>>,
+    tendermint_blocks: Arc<Mutex<VecDeque<TmBlock>>>
 }
 
 impl Server {
@@ -115,13 +210,13 @@ impl Server {
         let bitcoin_blocks = self.bitcoin_blocks.lock().unwrap();
         match bitcoin_blocks.back() {
             None => 0,
-            Some(block) => block.height as u64
+            Some(block) => block.height
         }
     }
 
     fn get_new_btc_blocks(
         &mut self
-    ) -> Result<Vec<btc_json::GetBlockResult>> {
+    ) -> Result<Vec<BtcBlock>> {
         let height = self.bitcoin_rpc.get_block_count()?;
 
         let mut blocks = vec![];
@@ -135,10 +230,10 @@ impl Server {
         for h in start_height..=height {
             let hash = self.bitcoin_rpc.get_block_hash(h)?;
             let block = self.bitcoin_rpc.get_block_info(&hash)?;
-            blocks.push(block.clone());
+            blocks.push(block.clone().into());
 
-            bitcoin_blocks.push_back(block);
-            while bitcoin_blocks.len() > 3 {
+            bitcoin_blocks.push_back(block.into());
+            while bitcoin_blocks.len() > 4 {
                 bitcoin_blocks.pop_front();
             }
         }
@@ -150,11 +245,11 @@ impl Server {
         let tendermint_blocks = self.tendermint_blocks.lock().unwrap();
         match tendermint_blocks.back() {
             None => 0,
-            Some(block) => block.header.height.value()
+            Some(block) => block.height
         }
     }
 
-    fn get_new_tm_blocks(&mut self, max_scan: u64) -> Result<Vec<tendermint::block::Block>> {
+    fn get_new_tm_blocks(&mut self, max_scan: u64) -> Result<Vec<TmBlock>> {
         let height = self.tendermint_rpc.status()?
             .sync_info.latest_block_height.value();
         
@@ -171,15 +266,15 @@ impl Server {
             let prev = tendermint_blocks.back();
 
             if let Some(prev) = prev {
-                if !has_header_tx(prev) && !has_header_tx(&res.block) {
+                if !has_header_tx(prev) && !has_header_tx(&res.clone().into()) {
                     if !blocks.is_empty() {
                         blocks.pop();
                     }
                     tendermint_blocks.pop_back();
                 }
             }
-            blocks.push(res.block.clone());
-            tendermint_blocks.push_back(res.block.clone());
+            blocks.push(res.clone().into());
+            tendermint_blocks.push_back(res.clone().into());
 
             while tendermint_blocks.len() > 6 {
                 tendermint_blocks.pop_front();
@@ -206,36 +301,9 @@ fn connect_tm_rpc(address: &str) -> Result<tm_rpc::Client> {
     Ok(tm_rpc::Client::new(&address)?)
 }
 
-// fn get_initial_tm_blocks(
-//     rpc: &tm_rpc::Client
-// ) -> Result<VecDeque<tendermint::block::Block>> {
-//     let height = rpc.status()?.sync_info.latest_block_height;
-
-//     let mut blocks: VecDeque<tendermint::block::Block> = Default::default();
-
-//     for i in 0..500 {
-//         if i == height.value() {
-//             break;
-//         }
-
-//         let block = rpc.block(height.value() - i)?.block;
-
-//         let before_populated = match blocks.back() {
-//             None => true,
-//             Some(prev) => prev.header.height.value() + 1 == block.header.height.value()
-//         };
-
-//         if has_header_tx(&block) || before_populated {
-//             blocks.push_back(block);
-//         }
-//     }
-
-//     Ok(blocks)
-// }
-
-fn has_header_tx(block: &tendermint::block::Block) -> bool {
-    for tx in block.data.iter() {
-        if &tx.as_bytes()[2..8] == b"Header" {
+fn has_header_tx(block: &TmBlock) -> bool {
+    for tx in block.txs.iter() {
+        if let TmTx::HeaderRelay(_) = tx {
             return true;
         }
     }
