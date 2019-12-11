@@ -42,7 +42,7 @@ function mainView (state, emit) {
 
 function txView (state, emit) {
   let txs = []
-  outer: for (let block of state.second.blocks) {
+  outer: for (let block of state.second.blocks.slice().reverse()) {
     if (block.txs == null) continue
     for (let tx of block.txs) {
       txs.push(tx)
@@ -55,9 +55,11 @@ function txView (state, emit) {
             <span class="value">${tx.data.value.toLocaleString()}</span>
           </span>
         `
-      } else if (tx.type === 'header') {
-        let plural = tx.data.block_headers.length === 1 ? '' : 's'
-        tx.content = html`<span>${tx.data.block_headers.length} Bitcoin header${plural}</span>`
+      } else if (tx.type === 'headerrelay') {
+        let plural = tx.data.length === 1 ? '' : 's'
+        tx.content = html`
+          <span class="hash">${tx.data[tx.data.length - 1]}</span>
+        `
       }
     }
   }
@@ -310,10 +312,10 @@ function chainStore (state, emitter) {
     first: [],
     second: []
   }
-
   let lastLink = null
-
   let initialized = false
+  let bitcoinHeights = {}
+
   function init () {
     initialized = false
     lastLink = null
@@ -507,6 +509,8 @@ function chainStore (state, emitter) {
 
   function formatBtcBlock (block) {
     console.log(block)
+    
+    bitcoinHeights[block.hash] = block.height
 
     return {
       height: block.height,
@@ -538,7 +542,8 @@ function chainStore (state, emitter) {
         tx.time = new Date(block.time)
         return tx
       })
-    let hasHeaderTx = txs.some((tx) => tx.type === 'header')
+    let headerTx = txs.find((tx) => tx.type === 'headerrelay')
+    console.log('hasHeaderTx', headerTx)
 
     return {
       height: block.height,
@@ -546,7 +551,8 @@ function chainStore (state, emitter) {
       time: new Date(block.time),
       txCount: block.txs.length,
       txs,
-      hasHeaderTx
+      hasHeaderTx: !!headerTx,
+      link: headerTx != null ? bitcoinHeights[headerTx.hash] : null
     }
   }
 

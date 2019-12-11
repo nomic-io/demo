@@ -11,11 +11,13 @@ use tendermint::rpc as tm_rpc;
 use serde::{Deserialize, Serialize};
 use failure::{bail, Error};
 use sha2::{Digest, Sha256};
+use bitcoin::blockdata::block::BlockHeader;
+use bitcoin::util::hash::BitcoinHash;
 
 type Result<T> = std::result::Result<T, Error>;
 
 fn main() {
-    let server = Server::new("localhost:18332", "kep.io:26657").unwrap();
+    let server = Server::new("localhost:18332", "localhost:26657").unwrap();
 
     let mut settings: ws::Settings = Default::default();
     settings.out_buffer_capacity = 1024 * 128;
@@ -63,7 +65,7 @@ impl ws::Factory for WSFactory {
 
 #[derive(Serialize, Clone)]
 enum TmTx {
-    HeaderRelay(Vec<(String, u64)>),
+    HeaderRelay(Vec<String>),
     WorkProof {
         value: u64,
         pubkey: String
@@ -75,7 +77,21 @@ impl From<tendermint::abci::transaction::Transaction> for TmTx {
         let bytes = tx.into_vec();
         let json: serde_json::Value = serde_json::from_slice(bytes.as_slice()).unwrap();
         if let serde_json::Value::Object(object) = &json["Header"] {
-            TmTx::HeaderRelay(vec![("".to_string(), 0)])
+            let mut headers = vec![];
+            for header_value in object["block_headers"].as_array().unwrap() {
+                let header_json = serde_json::to_string(header_value).unwrap();
+                let header: BlockHeader = serde_json::from_str(&header_json).unwrap();
+                let mut hash_bytes = header.bitcoin_hash().as_ref().to_vec();
+                hash_bytes.reverse();
+                let mut hash = String::new();
+                for byte in hash_bytes {
+                    hash.extend(format!("{:02x}", byte).chars());
+                }
+
+                headers.push(hash)
+            }
+
+            TmTx::HeaderRelay(headers)
         } else if let serde_json::Value::Object(object) = &json["WorkProof"] {
             let pubkey_arr = object["public_key"].as_array().unwrap();
             let pubkey_bytes: Vec<u8> = pubkey_arr
@@ -108,6 +124,7 @@ impl From<tendermint::abci::transaction::Transaction> for TmTx {
                 pubkey
             }
         } else {
+            println!("{:?}", json);
             panic!("unknown transaction type")
         }
     }
